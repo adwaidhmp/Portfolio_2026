@@ -566,34 +566,30 @@ export function initAgentChat(deps: {
 
   /* ---------- Teaser popup: invites visitors to try the agent ---------- */
   const hint = document.querySelector<HTMLElement>('[data-agent-hint]');
-  const HINT_KEY = 'agentHintDismissed';
-  const hintDismissed = (() => { try { return sessionStorage.getItem(HINT_KEY) === '1'; } catch { return false; } })();
-  function showHint() {
-    if (!hint || panel!.dataset.open === 'true') return;
+  // The small "Ask me anything" bubble: pops up for 2s a little after load, then again every 3 minutes
+  // (skipped while the chat is open or the tab is in the background). Tapping it opens the chat.
+  const HINT_FIRST_MS = 5200, HINT_SHOW_MS = 2000, HINT_EVERY_MS = 3 * 60 * 1000;
+  const SEEN_KEY = 'agentHintDismissed'; // the "1" badge on the button goes once the chat has been opened
+  let hintT = 0;
+  function flashHint() {
+    if (!hint || panel!.dataset.open === 'true' || document.hidden) return;
     hint.dataset.open = 'true';
     fab!.classList.add('is-nudge');
-    // show "typing…" dots first, then the message
-    setTimeout(() => hint.classList.add('is-typed'), deps.reduced ? 0 : 1200);
-    // don't sit on top of the content forever: tuck away after a while (the "1" badge stays)
-    setTimeout(() => {
-      if (hint.dataset.open === 'true') { hint.dataset.open = 'false'; fab!.classList.remove('is-nudge'); }
-    }, 14000);
+    clearTimeout(hintT);
+    hintT = window.setTimeout(() => { hint.dataset.open = 'false'; fab!.classList.remove('is-nudge'); }, HINT_SHOW_MS);
   }
   function hideHint() {
     if (!hint) return;
+    clearTimeout(hintT);
     hint.dataset.open = 'false';
     fab!.classList.remove('is-nudge');
     fab!.classList.add('is-seen');
-    try { sessionStorage.setItem(HINT_KEY, '1'); } catch { /* private mode */ }
+    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch { /* private mode */ }
   }
+  try { if (sessionStorage.getItem(SEEN_KEY) === '1') fab.classList.add('is-seen'); } catch { /* private mode */ }
   if (hint) {
-    if (hintDismissed) fab.classList.add('is-seen');
-    else setTimeout(showHint, 5200);
-    hint.addEventListener('click', (e) => {
-      const dismiss = (e.target as HTMLElement).closest('[data-agent-hint-close]');
-      hideHint();
-      if (!dismiss) open();
-    });
+    setTimeout(() => { flashHint(); setInterval(flashHint, HINT_EVERY_MS); }, HINT_FIRST_MS);
+    hint.addEventListener('click', open);
   }
 
   function open() {

@@ -7,8 +7,16 @@ import { skills } from '../data/portfolio';
 const total = skills.reduce((n, c) => n + c.skills.length, 0);
 const tone = (id: string) => (id === 'ai' ? 'tone-accent' : id === 'backend' ? 'tone-ink' : 'tone-glass');
 const pad = (n: number) => String(n).padStart(2, '0');
-// phones: the wide tile at the top of each swipe page (keep in sync with the page layout in global.css)
-const pageStarts = ['ai', 'backend', 'frontend', 'devops'];
+
+// Phones: the tiles are grouped into swipeable pages, one wide tile over two small ones ('ask' is the
+// "Want specifics?" tile). The small tiles are paired by height so neither has a big empty bottom.
+// On bigger screens the groups don't exist for layout (display: contents) and each tile's --o (order)
+// puts the bento back in data order. Any group missing here gets a page of its own.
+const layout = [['ai', 'lang', 'also'], ['backend', 'realtime', 'tools'], ['frontend', 'async', 'ask'], ['devops']];
+const placed = new Set(layout.flat());
+const extra = skills.filter((c) => !placed.has(c.id)).map((c) => c.id);
+const pages = extra.length ? [...layout, extra] : layout;
+const byId = new Map(skills.map((c, i) => [c.id, { c, i }]));
 ---
 <section id="skills" class="section" aria-labelledby="skills-title" data-section>
   <div class="container-x">
@@ -22,36 +30,45 @@ const pageStarts = ['ai', 'backend', 'frontend', 'devops'];
     />
 
     <div class="stack" data-stack>
-      {skills.map((c, i) => (
-        <article class:list={['tile', `tile--${c.id}`, tone(c.id)]} data-reveal data-tile>
-          {c.featured && <span class="tile__mark" aria-hidden="true">AI</span>}
-          <div class="tile__top t-micro">
-            <span>{pad(i + 1)}</span>
-            <span>{pad(c.skills.length)} skills</span>
-          </div>
-          <h3 class="tile__name">{c.name}</h3>
-          {c.featured && <p class="tile__note">★ Core focus — shipping these in production at Desklog</p>}
-          <ul class="tile__chips">
-            {c.skills.map((s, j) => <li style={`--i:${j}`}>{s}</li>)}
-          </ul>
-        </article>
-      ))}
-
-      <!-- hands the question to the "Ask my AI agent" chat -->
-      <article class="tile tile--ask tone-ink" data-reveal data-tile>
-        <div class="tile__top t-micro">
-          <span class="tile__live"><i aria-hidden="true"></i> agent online</span>
-          <span>{pad(skills.length + 1)}</span>
+      {pages.map((page) => (
+        <div class="stack__page">
+          {page.map((id) => {
+            // 'ask' hands the question to the "Ask my AI agent" chat
+            if (id === 'ask') return (
+              <article class="tile tile--ask tone-ink" style={`--o:${skills.length + 1}`} data-reveal data-tile>
+                <div class="tile__top t-micro">
+                  <span class="tile__live"><i aria-hidden="true"></i> agent online</span>
+                  <span>{pad(skills.length + 1)}</span>
+                </div>
+                <h3 class="tile__name">Want specifics?</h3>
+                <p class="tile__text">Ask my AI agent where I've used any of these in production.</p>
+                <button class="btn btn--gold tile__ask" type="button" data-ask="What's his tech stack?">Ask <span class="hide-sm">the </span>agent <span class="arrow" aria-hidden="true">↗</span></button>
+              </article>
+            );
+            const hit = byId.get(id);
+            if (!hit) return null;
+            const { c, i } = hit;
+            return (
+              <article class:list={['tile', `tile--${c.id}`, tone(c.id)]} style={`--o:${i + 1}`} data-reveal data-tile>
+                {c.featured && <span class="tile__mark" aria-hidden="true">AI</span>}
+                <div class="tile__top t-micro">
+                  <span>{pad(i + 1)}</span>
+                  <span>{pad(c.skills.length)} skills</span>
+                </div>
+                <h3 class="tile__name">{c.name}</h3>
+                {c.featured && <p class="tile__note">★ Core focus — shipping these in production at Desklog</p>}
+                <ul class="tile__chips">
+                  {c.skills.map((s, j) => <li style={`--i:${j}`}>{s}</li>)}
+                </ul>
+              </article>
+            );
+          })}
         </div>
-        <h3 class="tile__name">Want specifics?</h3>
-        <p class="tile__text">Ask my AI agent where I've used any of these in production.</p>
-        <button class="btn btn--gold tile__ask" type="button" data-ask="What's his tech stack?">Ask <span class="hide-sm">the </span>agent <span class="arrow" aria-hidden="true">↗</span></button>
-      </article>
+      ))}
     </div>
-    <!-- phones: the tiles become swipeable pages (one wide tile over two small ones; placement in CSS).
-         One dot per page; each page starts at one of these wide tiles. -->
+    <!-- phones: one dot per page (shows where you are, and can be tapped) -->
     <div class="skills__dots" data-stack-dots aria-hidden="true">
-      {pageStarts.map((id) => <button type="button" tabindex="-1" data-start={id}></button>)}
+      {pages.map(() => <button type="button" tabindex="-1"></button>)}
     </div>
   </div>
 </section>

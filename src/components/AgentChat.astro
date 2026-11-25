@@ -2,19 +2,11 @@
 import { agentSuggestions, profile, contact } from '../data/portfolio';
 import AgentIcon from './AgentIcon.astro';
 ---
-<!-- Teaser popup that invites visitors to try the agent -->
-<div class="agent-hint" data-agent-hint data-open="false" role="status" aria-live="polite">
-  <button class="agent-hint__close" type="button" aria-label="Dismiss" data-agent-hint-close>
-    <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1 1 11" stroke="currentColor" stroke-width="1.6" /></svg>
-  </button>
-  <div class="agent-hint__head">
-    <span class="agent-hint__avatar" aria-hidden="true"><AgentIcon /></span>
-    <span class="agent-hint__name">Agent<b>online</b></span>
-  </div>
-  <div class="agent-hint__typing" aria-hidden="true"><i></i><i></i><i></i></div>
-  <p class="agent-hint__text">Hi! I'm {profile.firstName}'s AI agent. Ask me what he's built, his MCP work or his tech stack.</p>
-  <button class="agent-hint__cta" type="button" data-agent-hint-cta>Ask me anything <span aria-hidden="true">→</span></button>
-</div>
+<!-- Small teaser bubble above the agent button: pops up for 2s after load, then every 3 minutes (agent.ts).
+     Hidden from screen readers and keyboard: the agent button below does the same job. -->
+<button class="agent-hint" type="button" data-agent-hint data-open="false" aria-hidden="true" tabindex="-1">
+  <span class="agent-hint__dot" aria-hidden="true"></span>Ask me anything
+</button>
 
 <button class="agent-fab" type="button" aria-expanded="false" aria-controls="agent" aria-label="Ask my AI agent" data-agent-open>
   <span class="agent-fab__orb" aria-hidden="true"><AgentIcon /><i class="agent-fab__badge">1</i></span>

@@ -588,10 +588,27 @@ function packetStorm() {
 }
 
 /* ---------- Sideways rows on phones (Skills, Education, Projects): drag with a mouse, dots show/move the position ---------- */
-// `pages`: the element each dot stands for (default: every child of the row)
-function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], pages?: HTMLElement[]) {
+// One dot per child of the row. `fitHeight`: the children have different heights, so the row's height
+// follows the one in view (blending between two while swiping) instead of staying as tall as the tallest.
+function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], fitHeight = false) {
   if (!row || !dots.length) return;
-  const items = pages ?? ([...row.children] as HTMLElement[]);
+  const items = [...row.children] as HTMLElement[];
+  const fit = () => {
+    const cs = getComputedStyle(row);
+    if (cs.overflowX === 'visible') { row.style.height = ''; return; } // not a sideways row at this size
+    const step = items.length > 1 ? items[1].offsetLeft - items[0].offsetLeft : row.clientWidth;
+    const p = Math.max(0, Math.min(items.length - 1, row.scrollLeft / (step || 1)));
+    const i = Math.floor(p), f = p - i;
+    const a = items[i].offsetHeight, b = items[Math.min(i + 1, items.length - 1)].offsetHeight;
+    row.style.height = `${a + (b - a) * f + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)}px`;
+  };
+  if (fitHeight) {
+    row.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    const ro = new ResizeObserver(fit);
+    items.forEach((it) => ro.observe(it));
+    fit();
+  }
   const syncDots = () => {
     const mid = row.scrollLeft + row.clientWidth / 2;
     let best = 0;
@@ -629,12 +646,7 @@ function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], pages?: HT
     dots.find((d) => d.classList.contains('is-on'))?.click();
   });
 }
-{
-  const stack = $<HTMLElement>('[data-stack]');
-  const dots = $$<HTMLButtonElement>('[data-stack-dots] button');
-  const starts = dots.map((d) => $<HTMLElement>(`.tile--${d.dataset.start}`, stack ?? undefined)).filter((el): el is HTMLElement => !!el);
-  if (starts.length === dots.length) swipeRow(stack, dots, starts);
-}
+swipeRow($<HTMLElement>('[data-stack]'), $$<HTMLButtonElement>('[data-stack-dots] button'), true);
 swipeRow($<HTMLElement>('[data-edu]'), $$<HTMLButtonElement>('[data-edu-dots] button'));
 swipeRow($<HTMLElement>('[data-projects]'), $$<HTMLButtonElement>('[data-projects-dots] button'));
 
