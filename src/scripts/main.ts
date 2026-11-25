@@ -523,7 +523,7 @@ form?.addEventListener('submit', async (e) => {
     try {
       const res = await fetch(endpoint, { method: 'POST', headers: { Accept: 'application/json' }, body: data });
       if (!res.ok) throw new Error(String(res.status));
-      status.textContent = "Message sent — thanks! I'll get back to you soon.";
+      status.textContent = "Message sent. Thanks! I'll get back to you soon.";
       form.reset();
     } catch {
       status.textContent = `Couldn't send right now. Please email ${form.dataset.email} directly.`;
@@ -532,12 +532,12 @@ form?.addEventListener('submit', async (e) => {
     // no form service set up: let the visitor pick Gmail / Outlook / their email app, all prefilled
     // (a bare mailto: often does nothing when the computer has no default email app)
     status.textContent = 'Your message is ready. Choose how to send it:';
-    openCompose(btn, { to: form.dataset.email ?? '', subject: `Portfolio enquiry from ${name}`, body: `${message}\n\n— ${name} (${email})` }, {
+    openCompose(btn, { to: form.dataset.email ?? '', subject: `Portfolio enquiry from ${name}`, body: `${message}\n\nFrom: ${name} (${email})` }, {
       copy: 'message',
       onPick: (how) => {
         status.textContent = how === 'copy'
-          ? `Message copied — paste it into an email to ${form.dataset.email}.`
-          : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready — just hit send.`;
+          ? `Message copied. Paste it into an email to ${form.dataset.email}.`
+          : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready. Just hit send.`;
       },
     });
   }
@@ -570,7 +570,7 @@ document.addEventListener('keydown', (e) => {
 function packetStorm() {
   world?.storm();
   if (toast) {
-    toast.textContent = '⚡ Agent mode — data packets everywhere';
+    toast.textContent = '⚡ Agent mode: data packets everywhere';
     toast.classList.add('is-on');
     setTimeout(() => toast.classList.remove('is-on'), 2600);
   }

@@ -5,7 +5,11 @@ import AgentIcon from './AgentIcon.astro';
 <!-- Small teaser bubble above the agent button: pops up for 2s after load, then every 3 minutes (agent.ts).
      Hidden from screen readers and keyboard: the agent button below does the same job. -->
 <button class="agent-hint" type="button" data-agent-hint data-open="false" aria-hidden="true" tabindex="-1">
-  <span class="agent-hint__dot" aria-hidden="true"></span>Ask me anything
+  <span class="agent-hint__avatar"><AgentIcon /></span>
+  <span class="agent-hint__body">
+    <span class="agent-hint__hi">Hi, I'm {profile.firstName}'s <span class="agent-hint__nb">AI agent <span class="agent-hint__wave">👋</span></span></span>
+    <span class="agent-hint__ask"><i class="agent-hint__dot"></i>Ask me anything →</span>
+  </span>
 </button>
 
 <button class="agent-fab" type="button" aria-expanded="false" aria-controls="agent" aria-label="Ask my AI agent" data-agent-open>

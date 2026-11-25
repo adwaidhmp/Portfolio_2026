@@ -15,8 +15,8 @@ export const openRoles = [
 
 /** Job preferences the AI agent shares when a visitor asks (they aren't shown on the page). */
 export const workPrefs = {
-  salary: '₹30,000 – ₹50,000 per month',
-  hours: '9 AM – 6 PM shifts',
+  salary: '₹30,000 to ₹50,000 per month',
+  hours: '9 AM to 6 PM shifts',
   balance: 'a good work-life balance',
   /** Your time zone, used when someone asks the agent for the time. */
   timeZone: 'Asia/Kolkata',
@@ -33,13 +33,13 @@ export const profile = {
   aboutShort: 'I build agentic AI systems, MCP servers and LLM-powered products with Python.',
   /** Search terms people use for this kind of role (also added to the page's search keywords). */
   keywords: ['AI Software Developer', 'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI', 'Python Developer', 'MCP', 'RAG'],
-  tagline: "I build AI agents that don't just talk — they get work done.",
+  tagline: "I build AI agents that don't just talk. They get work done.",
   location: 'Kannur, Kerala, India',
   locality: 'Kannur',
   region: 'Kerala',
   country: 'IN',
   relocation: 'Open to relocation (including the GCC)',
-  availability: 'Open to all AI roles — AI Engineer, Agentic AI, LLM, Generative AI and more · Full-time, remote or freelance · Open to relocation, including the GCC',
+  availability: 'Open to all AI roles: AI Engineer, Agentic AI, LLM, Generative AI and more · Full-time, remote or freelance · Open to relocation, including the GCC',
   /** Words cycled by the typing animation in the hero. */
   typing: ['AI Agents', 'MCP Servers', 'Agentic Chat', 'Python Backends', 'LLM-Powered Products'],
   /** Drop your resume at public/resume/Adwaidh-MP-Resume.pdf */
@@ -50,9 +50,9 @@ export const profile = {
 };
 
 export const seo = {
-  title: 'Adwaidh MP — AI Engineer | Agentic AI & Python',
+  title: 'Adwaidh MP | AI Engineer, Agentic AI & Python',
   description:
-    'Adwaidh MP — AI Engineer & Python developer in Kerala, India. Builds AI agents, MCP servers and RAG systems. Open to AI, agentic AI, LLM & GenAI roles.',
+    'Adwaidh MP, AI Engineer & Python developer in Kerala, India. Builds AI agents, MCP servers and RAG systems. Open to AI, agentic AI, LLM & GenAI roles.',
   keywords: [
     'AI Engineer', 'LLM Engineer', 'Agentic AI developer', 'AI agent developer', 'MCP server developer',
     'Python developer', 'Django developer', 'FastAPI developer', 'software developer for hire',
@@ -176,7 +176,7 @@ export const projects: Project[] = [
   {
     id: 'next',
     title: 'New Python Agentic AI project',
-    summary: 'In progress — a new agentic system built in Python. Check back soon.',
+    summary: 'In progress: a new agentic system built in Python. Check back soon.',
     points: [],
     tags: ['Python', 'Agentic AI'],
     links: [],
@@ -186,9 +186,9 @@ export const projects: Project[] = [
 ];
 
 export const education = [
-  { kind: 'Degree', title: 'BCA — Bachelor of Computer Applications', org: 'Kannur University', period: '2019 – 2022' },
+  { kind: 'Degree', title: 'BCA, Bachelor of Computer Applications', org: 'Kannur University', period: '2019 to 2022' },
   { kind: 'Certification', title: 'Full-Stack Python Developer', org: 'Bridgeon Solutions', period: '2025' },
-  { kind: 'Certification', title: 'Data Science', org: 'ExcelR', period: '2023 – 2024' },
+  { kind: 'Certification', title: 'Data Science', org: 'ExcelR', period: '2023 to 2024' },
 ];
 
 export const contact = {

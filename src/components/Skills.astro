@@ -56,7 +56,7 @@ const byId = new Map(skills.map((c, i) => [c.id, { c, i }]));
                   <span>{pad(c.skills.length)} skills</span>
                 </div>
                 <h3 class="tile__name">{c.name}</h3>
-                {c.featured && <p class="tile__note">★ Core focus — shipping these in production at Desklog</p>}
+                {c.featured && <p class="tile__note">★ Core focus: shipping these in production at Desklog</p>}
                 <ul class="tile__chips">
                   {c.skills.map((s, j) => <li style={`--i:${j}`}>{s}</li>)}
                 </ul>

@@ -20,8 +20,8 @@ const after = aiAt >= 0 ? first.slice(aiAt + 2) : '';
 
   <div class="hero__top">
     <p class="hero__hello" data-intro><em>Hello,</em><br />I'm {profile.firstName}</p>
-    <p class="hero__center-meta t-micro" data-intro>Portfolio — MMXXVI<br /><span class="dot">●</span> Available for hire</p>
-    <a class="hero__mark" href="#top" aria-label={`${profile.name} — home`} data-intro><Mark /></a>
+    <p class="hero__center-meta t-micro" data-intro>Portfolio · MMXXVI<br /><span class="dot">●</span> Available for hire</p>
+    <a class="hero__mark" href="#top" aria-label={`${profile.name}, home`} data-intro><Mark /></a>
   </div>
 
   <div class="hero__titlewrap">
@@ -30,7 +30,7 @@ const after = aiAt >= 0 ? first.slice(aiAt + 2) : '';
         <span class:list={['ai', profile.photo && 'has-photo']} style={profile.photo ? `--ai-photo:url('${profile.photo}')` : undefined}><span class="ch">A</span><span class="ch lower">i</span></span>
       )}{after.split('').map((c) => <span class="ch">{c}</span>)}{' '}
       <sup data-intro><span class="pill pill--line">{profile.lastName}<i class="half" aria-hidden="true"></i></span></sup>
-      <span class="sr-only"> — {profile.shortTitle}, Agentic AI &amp; Python Developer</span>
+      <span class="sr-only">, {profile.shortTitle}, Agentic AI &amp; Python Developer</span>
     </h1>
   </div>
 

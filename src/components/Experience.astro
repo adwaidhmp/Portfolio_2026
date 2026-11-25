@@ -17,7 +17,7 @@ import { experience, agentFlowSteps } from '../data/portfolio';
           <div class="role__head">
             <div>
               <div class="role__when">
-                <span class:list={['pill', r.current ? 'pill--gold' : '']}>{r.start} — {r.end}<i class="half" aria-hidden="true"></i></span>
+                <span class:list={['pill', r.current ? 'pill--gold' : '']}>{r.start} to {r.end}<i class="half" aria-hidden="true"></i></span>
                 {r.current && <span class="pill" style="border-color:rgb(246 245 241 / .3)"><span class="dot-live" aria-hidden="true"></span> Current role</span>}
               </div>
               <h3 class="role__title">{r.title}</h3>

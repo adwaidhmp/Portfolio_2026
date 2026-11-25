@@ -26,7 +26,7 @@ function timeAnswer(): Answer {
     tool: `get_time(tz="${here}")`,
     result: 'ok',
     segs: [T(same
-      ? `It's ${t()} on ${d()} (IST) — the same time zone as ${profile.firstName} in ${profile.locality}, India.`
+      ? `It's ${t()} on ${d()} (IST), the same time zone as ${profile.firstName} in ${profile.locality}, India.`
       : `It's ${t()} on ${d()} where you are.\nIn ${profile.locality}, India (${profile.firstName}'s time zone, IST) it's ${t(workPrefs.timeZone)} on ${d(workPrefs.timeZone)}.`)],
   };
 }
@@ -49,7 +49,7 @@ const intents: Intent[] = [
         `At ${current.companyNote ?? current.company}, Adwaidh has shipped 4 production AI systems:\n` +
         '① An autonomous coding agent on the Claude API that picks up assigned tasks, writes the code and completes them end to end.\n' +
         '② MCP servers for Desklog and Desklog CRM, so Claude and ChatGPT can read and act on product data.\n' +
-        '③ An in-app agentic chat with MCP tool calling — it answers live data questions ("who is absent today?") and runs actions from plain language.\n' +
+        '③ An in-app agentic chat with MCP tool calling. It answers live data questions ("who is absent today?") and runs actions from plain language.\n' +
         "④ A Claude Code & OpenAI Codex plugin that tracks developers' AI usage.\n" +
         'Outside work: a hybrid RAG + LangGraph knowledge assistant in his FitAI platform.',
       )],
@@ -63,7 +63,7 @@ const intents: Intent[] = [
       result: '3 matches',
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
-        'MCP is core to his work. He built 2 MCP servers — for Desklog and Desklog CRM — exposing tools so Claude and ChatGPT (including their web apps) can read and act on product data. ' +
+        'MCP is core to his work. He built 2 MCP servers, for Desklog and Desklog CRM, exposing tools so Claude and ChatGPT (including their web apps) can read and act on product data. ' +
         'He also built an in-app agentic chat that uses MCP tool calling to answer questions from live data and perform actions from natural-language commands.',
       )],
     }),
@@ -76,7 +76,7 @@ const intents: Intent[] = [
       result: `${experience.length} roles`,
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
-        `At ${current.companyNote ?? current.company} he works on the backend of a multi-tenant time-tracking SaaS used worldwide — mainly Laravel and PHP on a distributed, load-balanced architecture. ` +
+        `At ${current.companyNote ?? current.company} he works on the backend of a multi-tenant time-tracking SaaS used worldwide, mainly Laravel and PHP on a distributed, load-balanced architecture. ` +
         'He builds backend features and REST APIs, with a focus on database optimization, indexing and caching for concurrent tenant workloads.\n' +
         'Before that, at Bridgeon, he built REST APIs and services with Django, DRF and FastAPI (auth, role-based access), Celery + RabbitMQ background jobs and Redis caching.',
       )],
@@ -90,7 +90,7 @@ const intents: Intent[] = [
       result: `${cat('devops')?.skills.length ?? 0} skills`,
       section: 'skills', sectionLabel: 'Skills',
       segs: [T(
-        'He ships and runs his own services: Docker containers deployed on AWS (EC2, RDS, S3), Cloudflare and Contabo — Linux servers with Nginx as a reverse proxy, Gunicorn and PM2 for the app processes, cron jobs for scheduled work, and CI/CD pipelines.\n' +
+        'He ships and runs his own services: Docker containers deployed on AWS (EC2, RDS, S3), Cloudflare and Contabo: Linux servers with Nginx as a reverse proxy, Gunicorn and PM2 for the app processes, cron jobs for scheduled work, and CI/CD pipelines.\n' +
         `At ${current.companyNote ?? current.company} he handles deployments on AWS, Cloudflare and Contabo; at Bridgeon he containerized services with Docker and deployed them on AWS with Nginx, Gunicorn and CI/CD.`,
       )],
     }),
@@ -146,7 +146,7 @@ const intents: Intent[] = [
         T('\nPhone: '), T(contact.phone, contact.phoneHref),
         T('\nGitHub: '), T('github.com/adwaidhmp', contact.github),
         T('\nLinkedIn: '), T('adwaidh-mp-', contact.linkedin),
-        T('\nOr use the form in the contact section — he usually replies within a day.'),
+        T('\nOr use the form in the contact section. He usually replies within a day.'),
       ],
     }),
   },
@@ -158,7 +158,7 @@ const intents: Intent[] = [
       result: 'available',
       section: 'contact', sectionLabel: 'Contact',
       segs: [
-        T(`He's open to all AI roles: ${openRoles.join(', ')}.\nFull-time, remote or freelance — and open to relocation, including the GCC.\nBest way to start: `),
+        T(`He's open to all AI roles: ${openRoles.join(', ')}.\nFull-time, remote or freelance, and open to relocation, including the GCC.\nBest way to start: `),
         T(contact.email, `mailto:${contact.email}`),
       ],
     }),
@@ -172,7 +172,7 @@ const intents: Intent[] = [
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
         `${about.highlights[0].value}+ years hands-on.\n` +
-        experience.map((r) => `• ${r.title} — ${r.company}${r.companyNote ? ` (${r.companyNote})` : ''}, ${r.start} – ${r.end}`).join('\n'),
+        experience.map((r) => `• ${r.title} at ${r.company}${r.companyNote ? ` (${r.companyNote})` : ''}, ${r.start} to ${r.end}`).join('\n'),
       )],
     }),
   },
@@ -186,7 +186,7 @@ const intents: Intent[] = [
       segs: [
         T(`${projects[0].title}: ${projects[0].summary}\nCode: `),
         ...projects[0].links.flatMap((l, i) => [T(i ? ' · ' : ''), T(l.label, l.href)]),
-        T('\nNext up: a new Python agentic AI project — in progress.'),
+        T('\nNext up: a new Python agentic AI project, in progress.'),
       ],
     }),
   },
@@ -199,7 +199,7 @@ const intents: Intent[] = [
       section: 'projects', sectionLabel: 'Projects',
       segs: [T(
         'His FitAI platform has a hybrid AI knowledge assistant: a FastAPI service with SVC intent and safety classifiers, RAG (LangChain + ChromaDB) and LangGraph. ' +
-        'The LLM is only called after the ML and retrieval checks pass — a deliberate design to prevent hallucinations.',
+        'The LLM is only called after the ML and retrieval checks pass, a deliberate design to prevent hallucinations.',
       )],
     }),
   },
@@ -210,7 +210,7 @@ const intents: Intent[] = [
       tool: 'get_education()',
       result: `${education.length} records`,
       section: 'education', sectionLabel: 'Education',
-      segs: [T(education.map((e) => `• ${e.title} — ${e.org} (${e.period})`).join('\n'))],
+      segs: [T(education.map((e) => `• ${e.title}, ${e.org} (${e.period})`).join('\n'))],
     }),
   },
   {
@@ -279,7 +279,7 @@ const intents: Intent[] = [
     answer: () => ({
       tool: 'status()',
       result: 'all systems green',
-      segs: [T(`Doing great, thanks for asking! 😊 How can I help — want to hear what ${profile.firstName} has built?`)],
+      segs: [T(`Doing great, thanks for asking! 😊 How can I help? Want to hear what ${profile.firstName} has built?`)],
     }),
   },
   {
@@ -289,7 +289,7 @@ const intents: Intent[] = [
     answer: () => ({
       tool: 'whoami()',
       result: 'ok',
-      segs: [T(`I'm ${profile.firstName}'s portfolio agent — a small assistant he built into this site. I answer only from his portfolio (no guessing), point you to the right section, and can help you send him a message.`)],
+      segs: [T(`I'm ${profile.firstName}'s portfolio agent, a small assistant he built into this site. I answer only from his portfolio (no guessing), point you to the right section, and can help you send him a message.`)],
     }),
   },
   {
@@ -354,7 +354,7 @@ function route(q: string): Answer {
   return {
     tool: 'search_portfolio(query=…)',
     result: '0 matches',
-    segs: [T(`Hmm, I'm not sure about that one — I only know what's on ${profile.firstName}'s portfolio. Try asking about his AI work, skills, experience, the roles he's open to, salary expectations, working hours or how to contact him.`)],
+    segs: [T(`Hmm, I'm not sure about that one. I only know what's on ${profile.firstName}'s portfolio. Try asking about his AI work, skills, experience, the roles he's open to, salary expectations, working hours or how to contact him.`)],
   };
 }
 
@@ -522,7 +522,7 @@ export function initAgentChat(deps: {
       return;
     }
     if (!subject || !message) { say('Please add a subject and a message.', 'is-err'); return; }
-    const sign = `\n\n— ${name ? `${name} (${email})` : email}`;
+    const sign = `\n\nFrom: ${name ? `${name} (${email})` : email}`;
     const endpoint = draft.dataset.endpoint;
     const sendBtn = draft.querySelector<HTMLButtonElement>('.agent__draft-send');
     if (endpoint) {
@@ -542,7 +542,7 @@ export function initAgentChat(deps: {
         draftSent = true;
         say('Sent ✓', 'is-ok');
         setTimeout(closeDraft, deps.reduced ? 0 : 900);
-        agentSays(`Done — your message is on its way to ${profile.firstName}. He usually replies within a day.`);
+        agentSays(`Done! Your message is on its way to ${profile.firstName}. He usually replies within a day.`);
       } catch {
         say(`Couldn't send right now. Please email ${draft.dataset.email} directly.`, 'is-err');
       } finally {
@@ -550,7 +550,7 @@ export function initAgentChat(deps: {
       }
     } else {
       // no form service set up: let the visitor pick Gmail / Outlook / their email app, all prefilled
-      say('Ready — choose how to send it:', 'is-ok');
+      say('Ready. Choose how to send it:', 'is-ok');
       openCompose(sendBtn ?? draft, { to: draft.dataset.email ?? '', subject, body: message + sign }, {
         copy: 'message',
         onPick: (how) => {
@@ -558,7 +558,7 @@ export function initAgentChat(deps: {
           closeDraft();
           agentSays(how === 'copy'
             ? `Copied! Paste it into an email to ${draft.dataset.email} and it's on its way.`
-            : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready — just hit send.`);
+            : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready. Just hit send.`);
         },
       });
     }
@@ -603,7 +603,7 @@ export function initAgentChat(deps: {
       const t = document.createElement('div');
       t.className = 'msg__text';
       a.appendChild(t);
-      typeInto(t, [T(`Agent online. I answer from ${profile.firstName}'s portfolio only — pick a question below or type your own.`)]);
+      typeInto(t, [T(`Agent online. I answer from ${profile.firstName}'s portfolio only. Pick a question below or type your own.`)]);
     }
   }
   function shut(returnFocus = true) {
