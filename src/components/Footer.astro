@@ -1,0 +1,11 @@
+---
+import { profile } from '../data/portfolio';
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="footer__inner t-mono">
+    <span>© {year} {profile.name} — {profile.shortTitle}, {profile.locality}, India</span>
+    <span class="footer__egg">psst — type “agent” anywhere</span>
+    <a class="ulink" href="#top">Back to top ↑</a>
+  </div>
+</footer>

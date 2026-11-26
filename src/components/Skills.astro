@@ -1,0 +1,50 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { skills } from '../data/portfolio';
+
+// Bento board of poster tiles (same family as the hero cards): AI leads in a big teal tile,
+// Backend sits in black, the rest are glass. Spans live in CSS (.tile--{id}).
+const total = skills.reduce((n, c) => n + c.skills.length, 0);
+const tone = (id: string) => (id === 'ai' ? 'tone-accent' : id === 'backend' ? 'tone-ink' : 'tone-glass');
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+<section id="skills" class="section" aria-labelledby="skills-title" data-section>
+  <div class="container-x">
+    <SectionHeader
+      index="02"
+      label="Skills"
+      title="Tech stack"
+      script="what I ship with"
+      id="skills-title"
+      sub={`${total} skills across ${skills.length} groups. Agentic AI leads; a solid Python backend carries it.`}
+    />
+
+    <div class="stack" data-stack>
+      {skills.map((c, i) => (
+        <article class:list={['tile', `tile--${c.id}`, tone(c.id)]} data-reveal data-tile>
+          {c.featured && <span class="tile__mark" aria-hidden="true">AI</span>}
+          <div class="tile__top t-micro">
+            <span>{pad(i + 1)}</span>
+            <span>{pad(c.skills.length)} skills</span>
+          </div>
+          <h3 class="tile__name">{c.name}</h3>
+          {c.featured && <p class="tile__note">★ Core focus — shipping these in production at Desklog</p>}
+          <ul class="tile__chips">
+            {c.skills.map((s, j) => <li style={`--i:${j}`}>{s}</li>)}
+          </ul>
+        </article>
+      ))}
+
+      <!-- hands the question to the "Ask my AI agent" chat -->
+      <article class="tile tile--ask tone-ink" data-reveal data-tile>
+        <div class="tile__top t-micro">
+          <span class="tile__live"><i aria-hidden="true"></i> agent online</span>
+          <span>{pad(skills.length + 1)}</span>
+        </div>
+        <h3 class="tile__name">Want specifics?</h3>
+        <p class="tile__text">Ask my AI agent where I've used any of these in production.</p>
+        <button class="btn btn--gold tile__ask" type="button" data-ask="What's his tech stack?">Ask the agent <span class="arrow" aria-hidden="true">↗</span></button>
+      </article>
+    </div>
+  </div>
+</section>

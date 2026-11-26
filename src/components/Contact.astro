@@ -1,0 +1,81 @@
+---
+import { contact, profile } from '../data/portfolio';
+const words = contact.heading.split(' ');
+---
+<section id="contact" class="section section--dark contact" aria-labelledby="contact-title" data-section data-opaque>
+  <span class="xh spin" style="left:var(--gutter);top:40px"></span>
+  <span class="xh spin" style="right:var(--gutter);top:40px"></span>
+  <div class="container-x">
+    <div class="shead__meta t-micro" data-reveal>
+      <span class="idx"><b>(06)</b> Contact</span>
+      <span aria-hidden="true">06 / 06</span>
+    </div>
+
+    <!-- Desktop: heading + details on the left, the form on the right (visible as soon as you land here) -->
+    <div class="contact__layout">
+      <div class="contact__main">
+        <div class="shead__titlewrap">
+          <h2 class="contact__heading t-display" id="contact-title" data-split>
+            {words.map((w, i) => (
+              <Fragment><span class="w-mask"><span class:list={['w', (w.startsWith('intelligent') || w.startsWith('together')) && 'accent']}>{w}</span></span>{i < words.length - 1 && ' '}</Fragment>
+            ))}
+          </h2>
+          <span class="shead__accent" aria-hidden="true" data-script>say hello</span>
+        </div>
+
+        <div class="contact__info" data-reveal>
+          <ul class="clist">
+            <li class="crow">
+              <span class="crow__k t-micro">Email</span>
+              <a class="crow__v" href={`mailto:${contact.email}`}>{contact.email}</a>
+              <button class="copy-btn" type="button" data-copy={contact.email} aria-label="Copy email address">
+                Copy <span class="done" aria-hidden="true">Copied!</span>
+              </button>
+            </li>
+            <li class="crow">
+              <span class="crow__k t-micro">Phone</span>
+              <a class="crow__v" href={contact.phoneHref}>{contact.phone}</a>
+              <span></span>
+            </li>
+            <li class="crow">
+              <span class="crow__k t-micro">GitHub</span>
+              <a class="crow__v" href={contact.github} target="_blank" rel="noopener me">github.com/adwaidhmp</a>
+              <span aria-hidden="true">↗</span>
+            </li>
+            <li class="crow">
+              <span class="crow__k t-micro">LinkedIn</span>
+              <a class="crow__v" href={contact.linkedin} target="_blank" rel="noopener me">linkedin.com/in/adwaidh-mp-</a>
+              <span aria-hidden="true">↗</span>
+            </li>
+          </ul>
+          <div class="contact__avail">
+            <span class="dot-live" aria-hidden="true"></span>
+            <p style="margin:0">{profile.availability}</p>
+          </div>
+          <div class="contact__ctas">
+            <a class="btn btn--gold" href={profile.resume} download>Download resume <span class="arrow" aria-hidden="true">↓</span></a>
+            <a class="btn btn--ghost" href={`mailto:${contact.email}?subject=${encodeURIComponent('Opportunity for Adwaidh')}`}>Email me</a>
+          </div>
+        </div>
+      </div>
+
+      <form class="cform" data-form data-endpoint={contact.formEndpoint} data-email={contact.email} data-reveal novalidate>
+        <div class="field">
+          <label class="t-micro" for="cf-name">Name</label>
+          <input id="cf-name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label class="t-micro" for="cf-email">Email</label>
+          <input id="cf-email" name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label class="t-micro" for="cf-msg">Message</label>
+          <textarea id="cf-msg" name="message" required placeholder="Tell me about the role or project…"></textarea>
+        </div>
+        <button class="btn btn--gold cform__send" type="submit">Send message <span class="arrow" aria-hidden="true">↗</span></button>
+        <p class="cform__status" role="status" aria-live="polite" data-form-status></p>
+        <span class="cform__plane" aria-hidden="true" data-plane></span>
+      </form>
+    </div>
+  </div>
+</section>

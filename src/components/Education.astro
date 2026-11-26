@@ -1,0 +1,28 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { education } from '../data/portfolio';
+---
+<section id="education" class="section" aria-labelledby="education-title" data-section style="padding-top:0">
+  <div class="container-x">
+    <SectionHeader index="05" label="Education" title="Credentials" script="always learning" id="education-title" />
+    <ul class="edu__grid" role="list" style="list-style:none;margin:0;padding:0">
+      {education.map((e) => (
+        <li class="badge glass" data-reveal="tilt">
+          <svg class="badge__seal" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <g class="rot">
+              <circle cx="32" cy="32" r="29" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 4" />
+            </g>
+            <circle cx="32" cy="32" r="22" stroke="currentColor" stroke-width="1.5" />
+            {e.kind === 'Degree'
+              ? <path d="M18 30 32 23l14 7-14 7-14-7Zm6 4v7c4 3 12 3 16 0v-7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              : <path d="m24 32 6 6 11-12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />}
+          </svg>
+          <span class="pill badge__period">{e.period}</span>
+          <span class="t-micro badge__kind">{e.kind}</span>
+          <h3>{e.title}</h3>
+          <p>{e.org}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

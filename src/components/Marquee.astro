@@ -1,0 +1,15 @@
+---
+// A straight, full-width ticker band. 'gold' = teal band, 'onyx' = quiet band, 'big' = large type.
+interface Props { items: string[]; variant?: 'gold' | 'onyx' | 'big'; speed?: number; reverse?: boolean }
+const { items, variant = 'gold', speed = 60, reverse = false } = Astro.props;
+const cls = variant === 'gold' ? 'marquee' : variant === 'onyx' ? 'marquee marquee--onyx' : 'marquee marquee--onyx marquee--big';
+---
+<div class={cls} aria-hidden="true" data-marquee data-speed={speed} data-reverse={reverse ? '1' : '0'}>
+  <div class="marquee__track">
+    {[0, 1, 2].map(() => (
+      <div class="marquee__group">
+        {items.map((t) => <span class="marquee__item">{t}</span>)}
+      </div>
+    ))}
+  </div>
+</div>

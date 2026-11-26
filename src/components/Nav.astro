@@ -1,0 +1,45 @@
+---
+import Mark from './Mark.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import { nav } from '../data/portfolio';
+
+// Line icons for the mobile bottom bar (24×24, stroke = currentColor)
+const icons: Record<string, string> = {
+  about: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.9-3.6 3.7-5.6 7.2-5.6s6.3 2 7.2 5.6"/>',
+  skills: '<rect x="2.8" y="6.5" width="18.4" height="11" rx="2.4"/><path d="M6.5 10h.01M9.5 10h.01M12.5 10h.01M15.5 10h.01M8 14h8"/>',
+  experience: '<rect x="3.2" y="7.4" width="17.6" height="12" rx="2.2"/><path d="M9 7.4V5.6c0-.8.6-1.4 1.4-1.4h3.2c.8 0 1.4.6 1.4 1.4v1.8M3.2 12.6h17.6"/>',
+  projects: '<path d="m12 3.8 8.4 4.3L12 12.4 3.6 8.1 12 3.8Z"/><path d="m3.6 12.2 8.4 4.3 8.4-4.3M3.6 16.1l8.4 4.3 8.4-4.3"/>',
+  contact: '<path d="M20.6 3.6 10.4 13.8M20.6 3.6l-6.3 16.8-3.9-6.6-6.6-3.9 16.8-6.3Z"/>',
+};
+---
+<!-- Desktop: floating top bar -->
+<nav class="nav" aria-label="Primary" data-nav>
+  <a class="nav__brand" href="#top" aria-label="Back to top"><Mark compact /></a>
+  <div class="nav__linkswrap">
+    <span class="nav__indicator" aria-hidden="true" data-nav-indicator></span>
+    <ul class="nav__links">
+      {nav.map((n) => (
+        <li><a href={`#${n.id}`} data-nav-link={n.id}>{n.label}</a></li>
+      ))}
+    </ul>
+  </div>
+  <ThemeToggle class="nav__theme" />
+  <a class="btn btn--gold nav__cta" href="#contact">Hire me</a>
+</nav>
+
+<!-- Mobile: theme switch floats top-right (the bottom bar holds the sections) -->
+<ThemeToggle class="theme-toggle--float" />
+
+<!-- Mobile: app-style bottom bar -->
+<nav class="bnav" aria-label="Primary (mobile)">
+  <ul>
+    {nav.map((n) => (
+      <li>
+        <a href={`#${n.id}`} data-nav-link={n.id}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={icons[n.id] ?? ''} />
+          <span>{n.short ?? n.label}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>

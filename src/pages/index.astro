@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import Loader from '../components/Loader.astro';
+import Nav from '../components/Nav.astro';
+import Cursor from '../components/Cursor.astro';
+import Hero from '../components/Hero.astro';
+import Marquee from '../components/Marquee.astro';
+import About from '../components/About.astro';
+import Skills from '../components/Skills.astro';
+import Experience from '../components/Experience.astro';
+import Projects from '../components/Projects.astro';
+import Education from '../components/Education.astro';
+import Contact from '../components/Contact.astro';
+import Footer from '../components/Footer.astro';
+import AgentChat from '../components/AgentChat.astro';
+import { marquee, profile } from '../data/portfolio';
+---
+<Base>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <Loader />
+  <canvas id="world" aria-hidden="true" data-photo={profile.photo}></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <Nav />
+  <main id="main">
+    <Hero />
+    <Marquee items={marquee} variant="gold" speed={60} />
+    <About />
+    <Skills />
+    <Marquee items={['Available for hire', 'Full-time', 'Freelance', 'Open to relocation', 'GCC', 'Remote']} variant="big" speed={45} reverse />
+    <Experience />
+    <Projects />
+    <Education />
+    <Marquee items={marquee} variant="gold" speed={60} reverse />
+    <Contact />
+  </main>
+  <Footer />
+  <AgentChat />
+  <Cursor />
+</Base>
+
+<script>
+  import '../scripts/main';
+</script>

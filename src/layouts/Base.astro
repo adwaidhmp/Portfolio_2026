@@ -1,0 +1,147 @@
+---
+import '@fontsource-variable/unbounded';
+import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource/instrument-serif/400-italic.css';
+import '../styles/global.css';
+import unboundedLatin from '@fontsource-variable/unbounded/files/unbounded-latin-wght-normal.woff2?url';
+import groteskLatin from '@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url';
+import { profile, seo, contact, skills, experience, education } from '../data/portfolio';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { title = seo.title, description = seo.description, noindex = false } = Astro.props;
+const site = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(Astro.url.pathname, site).href;
+const ogImage = new URL(seo.ogImage, site).href;
+const current = experience.find((r) => r.current);
+
+const knowsAbout = Array.from(new Set(skills.flatMap((c) => c.skills)));
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'ProfilePage',
+      '@id': `${site.href}#profilepage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: 'en',
+      mainEntity: { '@id': `${site.href}#person` },
+    },
+    {
+      '@type': 'Person',
+      '@id': `${site.href}#person`,
+      name: profile.name,
+      givenName: profile.firstName,
+      familyName: profile.lastName,
+      jobTitle: ['AI Engineer', 'Software Engineer', 'Python Developer'],
+      description: seo.description,
+      url: site.href,
+      image: ogImage,
+      email: `mailto:${contact.email}`,
+      telephone: contact.phone,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: profile.locality,
+        addressRegion: profile.region,
+        addressCountry: profile.country,
+      },
+      sameAs: [contact.github, contact.linkedin],
+      knowsAbout,
+      worksFor: current
+        ? { '@type': 'Organization', name: current.company, ...(current.companyNote ? { brand: current.companyNote } : {}) }
+        : undefined,
+      alumniOf: { '@type': 'CollegeOrUniversity', name: 'Kannur University' },
+      hasCredential: education
+        .filter((e) => e.kind === 'Certification')
+        .map((e) => ({ '@type': 'EducationalOccupationalCredential', name: e.title, recognizedBy: { '@type': 'Organization', name: e.org } })),
+      seeks: {
+        '@type': 'Demand',
+        description: 'AI / LLM engineering roles, agentic AI and Python freelance projects. Open to relocation, including the GCC.',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site.href}#website`,
+      url: site.href,
+      name: `${profile.name} — Portfolio`,
+      inLanguage: 'en',
+      publisher: { '@id': `${site.href}#person` },
+    },
+  ],
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={seo.keywords.join(', ')} />
+    <meta name="author" content={profile.name} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <!-- Open Graph / LinkedIn -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content={`${profile.name} — Portfolio`} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${profile.name} — ${profile.title}`} />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="profile:first_name" content={profile.firstName} />
+    <meta property="profile:last_name" content={profile.lastName} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="preload" href={unboundedLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={groteskLatin} as="font" type="font/woff2" crossorigin />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!-- Runs before paint: feature flags used by CSS (no flash of hidden content). -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        // Theme: the visitor's saved choice, otherwise light (the default look).
+        var theme = 'light';
+        try { theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'; } catch (e) {}
+        d.dataset.theme = theme;
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.setAttribute('content', theme === 'dark' ? '#0e0e0e' : '#ffffff');
+        try {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduced');
+          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) d.classList.add('has-cursor');
+          var c = document.createElement('canvas');
+          var gl = c.getContext('webgl2') || c.getContext('webgl');
+          if (!gl) d.classList.add('no-webgl');
+        } catch (e) { d.classList.add('no-webgl'); }
+        // Never let the loader hold the page hostage.
+        setTimeout(function () { d.classList.add('loaded'); }, 3000);
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

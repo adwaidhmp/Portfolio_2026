@@ -1,0 +1,14 @@
+---
+// Light / dark switch. The icon shows the mode you'll switch TO (moon in light, sun in dark).
+interface Props { class?: string }
+const { class: cls = '' } = Astro.props;
+---
+<button class:list={['theme-toggle', cls]} type="button" aria-label="Switch to dark mode" aria-pressed="false" data-theme-toggle>
+  <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M20.2 14.6A8.2 8.2 0 0 1 9.4 3.8a8.2 8.2 0 1 0 10.8 10.8Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+  </svg>
+  <svg class="theme-toggle__sun" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7" />
+    <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+  </svg>
+</button>

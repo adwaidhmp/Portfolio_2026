@@ -1,0 +1,48 @@
+---
+// Loader: a small agent network (same nodes + thin lines as the page background). Packets run
+// from the hub out to each node while the page loads; when it is ready main.ts reads these nodes
+// and spreads the network out across the screen as the backdrop fades.
+---
+<div class="loader" role="status" aria-label="Loading portfolio">
+  <div class="loader__bg" aria-hidden="true"></div>
+  <div class="loader__spinner" data-loader-spinner aria-hidden="true">
+    <svg viewBox="-62 -62 124 124">
+      <g class="ld-graph">
+        <line class="ld-e" data-e="0-1" x1="0.0" y1="0.0" x2="0.0" y2="-40.0" />
+        <line class="ld-e" data-e="0-2" x1="0.0" y1="0.0" x2="37.1" y2="-19.7" />
+        <line class="ld-e" data-e="0-3" x1="0.0" y1="0.0" x2="32.2" y2="20.1" />
+        <line class="ld-e" data-e="0-4" x1="0.0" y1="0.0" x2="-1.4" y2="41.0" />
+        <line class="ld-e" data-e="0-5" x1="0.0" y1="0.0" x2="-33.1" y2="20.7" />
+        <line class="ld-e" data-e="0-6" x1="0.0" y1="0.0" x2="-36.4" y2="-21.0" />
+        <line class="ld-e" data-e="1-2" x1="0.0" y1="-40.0" x2="37.1" y2="-19.7" />
+        <line class="ld-e" data-e="2-3" x1="37.1" y1="-19.7" x2="32.2" y2="20.1" />
+        <line class="ld-e" data-e="4-5" x1="-1.4" y1="41.0" x2="-33.1" y2="20.7" />
+        <line class="ld-e" data-e="5-6" x1="-33.1" y1="20.7" x2="-36.4" y2="-21.0" />
+        <line class="ld-e" data-e="7-1" x1="28.0" y1="-48.5" x2="0.0" y2="-40.0" />
+        <line class="ld-e" data-e="7-2" x1="28.0" y1="-48.5" x2="37.1" y2="-19.7" />
+        <line class="ld-e" data-e="8-3" x1="19.2" y1="52.6" x2="32.2" y2="20.1" />
+        <line class="ld-e" data-e="8-4" x1="19.2" y1="52.6" x2="-1.4" y2="41.0" />
+        <line class="ld-e" data-e="9-5" x1="-56.0" y1="0.0" x2="-33.1" y2="20.7" />
+        <line class="ld-e" data-e="9-6" x1="-56.0" y1="0.0" x2="-36.4" y2="-21.0" />
+        <circle class="ld-n ld-n--sat" data-n="7" cx="28.0" cy="-48.5" r="1.8" />
+        <circle class="ld-n ld-n--sat" data-n="8" cx="19.2" cy="52.6" r="1.8" />
+        <circle class="ld-n ld-n--sat" data-n="9" cx="-56.0" cy="0.0" r="1.8" />
+        <circle class="ld-pkt" r="1.7" style="--x:0.0px;--y:-40.0px;--d:0.0s" />
+        <circle class="ld-pkt" r="1.7" style="--x:37.1px;--y:-19.7px;--d:0.3s" />
+        <circle class="ld-pkt" r="1.7" style="--x:32.2px;--y:20.1px;--d:0.6s" />
+        <circle class="ld-pkt" r="1.7" style="--x:-1.4px;--y:41.0px;--d:0.9s" />
+        <circle class="ld-pkt" r="1.7" style="--x:-33.1px;--y:20.7px;--d:1.2s" />
+        <circle class="ld-pkt" r="1.7" style="--x:-36.4px;--y:-21.0px;--d:1.5s" />
+        <circle class="ld-n" data-n="1" cx="0.0" cy="-40.0" r="2.6" style="--d:0.0s" />
+        <circle class="ld-n" data-n="2" cx="37.1" cy="-19.7" r="2.6" style="--d:0.3s" />
+        <circle class="ld-n" data-n="3" cx="32.2" cy="20.1" r="2.6" style="--d:0.6s" />
+        <circle class="ld-n" data-n="4" cx="-1.4" cy="41.0" r="2.6" style="--d:0.9s" />
+        <circle class="ld-n" data-n="5" cx="-33.1" cy="20.7" r="2.6" style="--d:1.2s" />
+        <circle class="ld-n" data-n="6" cx="-36.4" cy="-21.0" r="2.6" style="--d:1.5s" />
+        <circle class="ld-ring" r="5" />
+        <circle class="ld-hub" data-n="0" r="5" />
+      </g>
+    </svg>
+  </div>
+  <canvas class="loader__fx" data-loader-fx aria-hidden="true"></canvas>
+</div>

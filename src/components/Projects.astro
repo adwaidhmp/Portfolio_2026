@@ -1,0 +1,71 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { projects } from '../data/portfolio';
+---
+<section id="projects" class="section" aria-labelledby="projects-title" data-section>
+  <div class="container-x">
+    <SectionHeader index="04" label="Projects" title="Selected work" script="things I shipped" id="projects-title" />
+
+    <div class="projects__grid">
+      {projects.map((p, i) => {
+        const tone = p.accent ?? 'dark';
+        const idx = String(i + 1).padStart(2, '0');
+        return (
+          <article class:list={['pcard', p.comingSoon && 'pcard--soon']} data-pcard data-flipped="false" data-reveal="tilt" aria-labelledby={`p-${p.id}`}>
+            <div class="pcard__tilt">
+              <div class="pcard__flip">
+                <!-- Front -->
+                <div class={`pcard__face pcard__face--${tone}`} data-face="front">
+                  {p.comingSoon && <span class="soon-glow" aria-hidden="true"></span>}
+                  <svg class="pcard__art" viewBox="0 0 340 340" aria-hidden="true">
+                    {[160, 130, 100, 70, 40].map((r, k) => <circle cx="170" cy="170" r={r} stroke-opacity={0.12 + k * 0.05} />)}
+                  </svg>
+                  <span class="pcard__shine" aria-hidden="true"></span>
+                  <div class="pcard__top">
+                    <span class="pcard__idx" aria-hidden="true">{idx}</span>
+                    <span class="pill">{p.comingSoon ? 'In progress' : 'Case study'}<i class="half" aria-hidden="true"></i></span>
+                  </div>
+                  {p.comingSoon && <div class="soon-core" aria-hidden="true"><span></span></div>}
+                  <div>
+                    <h3 class="pcard__title" id={`p-${p.id}`}>{p.title}</h3>
+                    <p class="pcard__summary">{p.summary}</p>
+                  </div>
+                  <div style="display:grid;gap:16px">
+                    <div class="pcard__tags" aria-label="Tech">
+                      {p.tags.map((t) => <span class="pill">{t}</span>)}
+                    </div>
+                    {!p.comingSoon && (
+                      <div class="pcard__actions">
+                        <button class="btn" type="button" data-flip aria-label={`Show details of ${p.title}`}>Details <span aria-hidden="true">↻</span></button>
+                        {p.links.map((l) => (
+                          <a class="btn btn--ghost" href={l.href} target="_blank" rel="noopener" aria-label={`${l.label} code on GitHub (opens in a new tab)`}>{l.label} <span class="arrow" aria-hidden="true">↗</span></a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <!-- Back -->
+                {!p.comingSoon && (
+                  <div class="pcard__face pcard__face--ink pcard__back" data-face="back" inert>
+                    <div class="pcard__top">
+                      <span class="t-micro" style="color:var(--color-gold)">({idx}) Under the hood</span>
+                      <button class="btn btn--ghost" type="button" data-flip aria-label={`Back to ${p.title} overview`}>Back <span aria-hidden="true">↺</span></button>
+                    </div>
+                    <ul class="pcard__points">
+                      {p.points.map((pt) => <li>{pt}</li>)}
+                    </ul>
+                    <div class="pcard__actions">
+                      {p.links.map((l) => (
+                        <a class="btn btn--gold" href={l.href} target="_blank" rel="noopener" aria-label={`${l.label} code on GitHub (opens in a new tab)`}>{l.label} repo <span class="arrow" aria-hidden="true">↗</span></a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </div>
+</section>

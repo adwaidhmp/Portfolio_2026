@@ -1,0 +1,28 @@
+---
+interface Props {
+  index: string;
+  label: string;
+  title: string;
+  script?: string;
+  sub?: string;
+  id: string;
+  total?: string;
+}
+const { index, label, title, script, sub, id, total = '06' } = Astro.props;
+const words = title.split(' ');
+---
+<header class="shead">
+  <div class="shead__meta t-micro" data-reveal>
+    <span class="idx"><b>({index})</b> {label}</span>
+    <span aria-hidden="true">{index} / {total}</span>
+  </div>
+  <div class="shead__titlewrap">
+    <h2 class="shead__title t-display" id={id} data-split>
+      {words.map((w, i) => (
+        <Fragment><span class="w-mask"><span class="w">{w}</span></span>{i < words.length - 1 && ' '}</Fragment>
+      ))}
+    </h2>
+    {script && <span class="shead__accent" aria-hidden="true" data-script>{script}</span>}
+  </div>
+  {sub && <p class="shead__sub" data-reveal>{sub}</p>}
+</header>

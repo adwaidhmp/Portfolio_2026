@@ -1,0 +1,22 @@
+---
+// "AD" monogram: geometric A (with an accent node in its counter) + D. Colours follow the theme.
+// compact = letters only (for small badges like the nav); otherwise wrapped in two rings.
+import { MARK_A, MARK_D, MARK_NODE } from '../data/mark';
+
+interface Props { class?: string; title?: string; compact?: boolean }
+const { class: cls = '', title, compact = false } = Astro.props;
+---
+<svg
+  class:list={['mark', cls]}
+  viewBox={compact ? '6 6 36 36' : '0 0 48 48'}
+  fill="none"
+  role={title ? 'img' : undefined}
+  aria-hidden={title ? undefined : 'true'}
+  aria-label={title}
+>
+  {!compact && <circle class="mark-ring" cx="24" cy="24" r="22.5" stroke-width=".8" stroke-dasharray="1.2 2.2" style="stroke: var(--accent)" />}
+  {!compact && <circle cx="24" cy="24" r="19" stroke-opacity=".6" stroke-width=".8" style="stroke: var(--accent)" />}
+  <path fill="currentColor" fill-rule="evenodd" d={MARK_A} />
+  <path d={MARK_NODE} style="fill: var(--accent)" />
+  <path fill="currentColor" fill-rule="evenodd" d={MARK_D} />
+</svg>

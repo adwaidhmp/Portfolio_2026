@@ -1,0 +1,76 @@
+---
+import Mark from './Mark.astro';
+import { profile } from '../data/portfolio';
+import { wheelCards } from '../data/cards';
+
+const first = profile.firstName.toUpperCase();
+// Highlight the "AI" hiding in the name (ADW-AI-DH). Falls back gracefully for any other name.
+const aiAt = first.indexOf('AI');
+const before = aiAt >= 0 ? first.slice(0, aiAt) : first;
+const ai = aiAt >= 0 ? 'AI' : '';
+const after = aiAt >= 0 ? first.slice(aiAt + 2) : '';
+---
+<section class="hero" id="top" aria-labelledby="hero-title" data-hero>
+  <span class="xh spin" style="left:var(--gutter);top:150px"></span>
+  <span class="xh" style="left:33%;top:150px"></span>
+  <span class="xh" style="left:66%;top:150px"></span>
+  <span class="xh spin" style="right:var(--gutter);top:150px"></span>
+  <span class="xh" style="left:var(--gutter);top:62%"></span>
+  <span class="xh" style="right:var(--gutter);top:62%"></span>
+
+  <div class="hero__top">
+    <p class="hero__hello" data-intro><em>Hello,</em><br />I'm {profile.firstName}</p>
+    <p class="hero__center-meta t-micro" data-intro>Portfolio — MMXXVI<br /><span class="dot">●</span> Available for hire</p>
+    <a class="hero__mark" href="#top" aria-label={`${profile.name} — home`} data-intro><Mark /></a>
+  </div>
+
+  <div class="hero__titlewrap">
+    <h1 class="hero__title" id="hero-title">
+      {before.split('').map((c) => <span class="ch">{c}</span>)}{ai && (
+        <span class="ai"><span class="ch">A</span><span class="ch lower">i</span></span>
+      )}{after.split('').map((c) => <span class="ch">{c}</span>)}{' '}
+      <sup data-intro><span class="pill pill--line">{profile.lastName}<i class="half" aria-hidden="true"></i></span></sup>
+      <span class="sr-only"> — {profile.shortTitle}, Agentic AI &amp; Python Developer</span>
+    </h1>
+  </div>
+
+  <div class="hero__body">
+    <div class="hero__left">
+      <p class="hero__role t-micro" data-intro>{profile.title}</p>
+      <p class="hero__tagline" data-intro>{profile.tagline}</p>
+      <p class="hero__loc" data-intro>
+        <span class="dot-live" aria-hidden="true"></span>
+        <span>{profile.location}<br />{profile.relocation}</span>
+      </p>
+    </div>
+
+    <!-- Card strip gliding right → left on a gentle curve. The 3D version draws over this
+         spot; this CSS copy shows before WebGL is ready and is the fallback without it. -->
+    <div class="hero__stage" data-hero-stage aria-hidden="true">
+      <div class="strip" data-fan>
+        <div class="strip__track">
+          {[...wheelCards, ...wheelCards].map((c) => (
+            <div class="strip__card">
+              <div class={`fan__face c-${c.bg}`}>
+                <small>{c.label}</small>
+                <b>{c.big ?? '✳'}</b>
+                <small>{c.sub}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__right">
+      <p class="hero__typing" data-intro aria-live="off">
+        I build <br /><span class="typed" data-typing={JSON.stringify(profile.typing)}>{profile.typing[0]}</span><span class="caret" aria-hidden="true"></span>
+      </p>
+      <div class="hero__ctas" data-intro>
+        <a class="btn" href="#projects">View <span class="hide-sm">my </span>work <span class="arrow" aria-hidden="true">↗</span></a>
+        <a class="btn btn--ghost" href={profile.resume} download><span class="hide-sm">Download </span>Resume</a>
+        <a class="btn btn--gold" href="#contact">Contact me</a>
+      </div>
+    </div>
+  </div>
+</section>

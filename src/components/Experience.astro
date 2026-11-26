@@ -1,0 +1,67 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { experience, agentFlowSteps } from '../data/portfolio';
+---
+<section id="experience" class="section section--dark" aria-labelledby="experience-title" data-section data-opaque>
+  <span class="xh spin" style="left:var(--gutter);top:40px"></span>
+  <span class="xh spin" style="right:var(--gutter);top:40px"></span>
+  <div class="container-x">
+    <SectionHeader index="03" label="Experience" title="Experience" script="the journey" id="experience-title" />
+
+    <div class="xp" data-xp>
+      <span class="xp__rail" aria-hidden="true"><i data-xp-progress></i></span>
+      <ol class="xp__list" role="list">
+      {experience.map((r) => (
+        <li class:list={['role', r.current && 'role--current']} data-role data-open={r.current ? 'true' : 'false'} data-reveal="tilt">
+          <span class="role__node" aria-hidden="true"></span>
+          <div class="role__head">
+            <div>
+              <div class="role__when">
+                <span class:list={['pill', r.current ? 'pill--gold' : '']}>{r.start} — {r.end}<i class="half" aria-hidden="true"></i></span>
+                {r.current && <span class="pill" style="border-color:rgb(246 245 241 / .3)"><span class="dot-live" aria-hidden="true"></span> Current role</span>}
+              </div>
+              <h3 class="role__title">{r.title}</h3>
+              <p class="role__company">
+                <b>{r.company}</b>{r.companyNote && <> ({r.companyNote})</>}{r.location && <> · {r.location}</>}
+              </p>
+            </div>
+            <button class="role__toggle" type="button" aria-expanded={r.current ? 'true' : 'false'} aria-controls={`role-${r.id}`} aria-label={`Show details for ${r.title} at ${r.company}`} data-role-toggle>
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 1v16M1 9h16" stroke="currentColor" stroke-width="1.6" /></svg>
+            </button>
+          </div>
+          {r.agentFlow && (
+            <div class="role__flow">
+              <div class="flow" aria-label={`Agent flow: ${agentFlowSteps.join(' to ')}`} role="img">
+                <div class="flow__label t-mono"><span>agent.flow()</span><span>live</span></div>
+                <ol class="flow__steps" aria-hidden="true">
+                  {agentFlowSteps.map((s, i) => (
+                    <Fragment>
+                      <li class="flow__step" style={`--i:${i}`}>{s}</li>
+                      {i < agentFlowSteps.length - 1 && <li class="flow__link" style={`--i:${i}`}><i></i></li>}
+                    </Fragment>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+          <p class="role__lead">{r.points[0]}</p>
+          <div class="role__body" id={`role-${r.id}`}>
+            <div>
+              <div class="role__inner">
+                <ul class="role__points">
+                  {r.points.map((p) => <li>{p}</li>)}
+                </ul>
+                {r.tech && (
+                  <div class="role__tech" aria-label="Tech used">
+                    {r.tech.map((t) => <span class="pill">{t}</span>)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </li>
+      ))}
+      </ol>
+    </div>
+  </div>
+</section>

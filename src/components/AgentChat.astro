@@ -1,0 +1,57 @@
+---
+import { agentSuggestions, profile } from '../data/portfolio';
+import AgentIcon from './AgentIcon.astro';
+---
+<!-- Teaser popup that invites visitors to try the agent -->
+<div class="agent-hint" data-agent-hint data-open="false" role="status" aria-live="polite">
+  <button class="agent-hint__close" type="button" aria-label="Dismiss" data-agent-hint-close>
+    <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1 1 11" stroke="currentColor" stroke-width="1.6" /></svg>
+  </button>
+  <div class="agent-hint__head">
+    <span class="agent-hint__avatar" aria-hidden="true"><AgentIcon /></span>
+    <span class="agent-hint__name">Agent<b>online</b></span>
+  </div>
+  <div class="agent-hint__typing" aria-hidden="true"><i></i><i></i><i></i></div>
+  <p class="agent-hint__text">Hi! I'm {profile.firstName}'s AI agent. Ask me what he's built, his MCP work or his tech stack.</p>
+  <button class="agent-hint__cta" type="button" data-agent-hint-cta>Ask me anything <span aria-hidden="true">→</span></button>
+</div>
+
+<button class="agent-fab" type="button" aria-expanded="false" aria-controls="agent" aria-label="Ask my AI agent" data-agent-open>
+  <span class="agent-fab__orb" aria-hidden="true"><AgentIcon /><i class="agent-fab__badge">1</i></span>
+  <span class="agent-fab__label">Ask my AI agent</span>
+</button>
+
+<!-- data-lenis-prevent: the page's smooth scroll leaves wheel/touch inside the chat alone, so the log scrolls -->
+<section class="agent" id="agent" role="dialog" aria-modal="false" aria-labelledby="agent-title" data-agent data-open="false" data-lenis-prevent>
+  <header class="agent__head">
+    <span class="agent__avatar" aria-hidden="true"><AgentIcon /></span>
+    <p class="agent__title" id="agent-title" style="margin:0"><b>agent@adwaidh</b>: ~/portfolio</p>
+    <button class="agent__close" type="button" aria-label="Close chat" data-agent-close>
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1 1 11" stroke="currentColor" stroke-width="1.5" /></svg>
+    </button>
+  </header>
+  <div class="agent__log" aria-live="polite" data-agent-log></div>
+  <!-- Suggested questions: two rows in a strip that scrolls sideways (wheel, drag, swipe or the arrows) -->
+  <div class="agent__sugwrap" data-sugwrap>
+    <button class="agent__sugnav agent__sugnav--prev" type="button" aria-label="Scroll questions left" data-sug-step="-1">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 2 3.5 6l4 4" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+    </button>
+    <div class="agent__sugs" role="group" aria-label="Suggested questions" data-agent-sugs data-lenis-prevent>
+      {[agentSuggestions.slice(0, Math.ceil(agentSuggestions.length / 2)), agentSuggestions.slice(Math.ceil(agentSuggestions.length / 2))].map((row) => (
+        <div class="agent__sugrow">{row.map((q) => <button type="button">{q}</button>)}</div>
+      ))}
+    </div>
+    <button class="agent__sugnav agent__sugnav--next" type="button" aria-label="Scroll questions right" data-sug-step="1">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+    </button>
+  </div>
+  <form class="agent__form" data-agent-form>
+    <span aria-hidden="true">❯</span>
+    <label class="sr-only" for="agent-input">Ask a question about Adwaidh</label>
+    <input id="agent-input" type="text" autocomplete="off" placeholder="Ask about skills, MCP, relocation…" maxlength="200" />
+    <button type="submit" aria-label="Send question">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" /></svg>
+    </button>
+  </form>
+</section>
+<div class="toast" role="status" aria-live="polite" data-toast></div>
