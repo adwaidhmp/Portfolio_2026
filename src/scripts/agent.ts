@@ -614,8 +614,33 @@ export function initAgentChat(deps: {
     closeDraft();
     panel!.dataset.open = 'false';
     fab!.setAttribute('aria-expanded', 'false');
+    fitToKeyboard();
     if (returnFocus) fab!.focus({ preventScroll: true });
   }
+
+  // Phones: the on-screen keyboard covers the bottom of the screen without moving the page, so this
+  // fixed-to-the-bottom chat (and its typing field) would end up behind it. While the keyboard is up,
+  // fit the chat into the part of the screen that is still visible, typing field just above the keyboard.
+  const vv = window.visualViewport;
+  let keyboardUp = false;
+  function fitToKeyboard() {
+    if (!vv) return;
+    const up = panel!.dataset.open === 'true' && document.documentElement.clientHeight - vv.height > 120;
+    if (!up) {
+      if (keyboardUp) { panel!.style.removeProperty('top'); panel!.style.removeProperty('bottom'); panel!.style.removeProperty('height'); }
+      keyboardUp = false;
+      return;
+    }
+    const gap = 8;
+    const h = Math.min(600, vv.height - gap * 2);
+    panel!.style.height = `${h}px`;
+    panel!.style.top = `${vv.offsetTop + vv.height - h - gap}px`;
+    panel!.style.bottom = 'auto';
+    if (!keyboardUp) log!.scrollTop = log!.scrollHeight; // keyboard just opened: keep the latest message in view
+    keyboardUp = true;
+  }
+  vv?.addEventListener('resize', fitToKeyboard);
+  vv?.addEventListener('scroll', fitToKeyboard);
 
   fab.addEventListener('click', open);
   close.addEventListener('click', () => shut());

@@ -605,9 +605,12 @@ html:not(.webgl-ready) .strip:hover .strip__track { animation-play-state: paused
   .hero__hello { font-size: .78rem; }
   .hero__center-meta, .hero__mark { display: none; }
   .hero__titlewrap { margin-top: 30px; }
-  .hero__title { font-size: clamp(2.3rem, 13.2vw, 6rem); }
+  .hero { --title-fs: clamp(2.3rem, 13.2vw, 6rem); }
+  .hero__title { font-size: var(--title-fs); }
   .hero__title sup { position: absolute; left: auto; right: 0; top: auto; bottom: calc(100% + 6px); margin: 0; font-size: .66rem; }
-  .hero__body { --cw: clamp(100px, min(34vw, 20svh), 150px); grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; align-items: start; gap: 14px; margin-top: 12px; min-height: 0; }
+  .hero__body { --cw: clamp(100px, min(34vw, 20svh), 150px); grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; align-items: start; gap: 14px; min-height: 0;
+    /* clears the "Ai" photo block, which hangs .3em below the name, plus an 8px gap */
+    margin-top: calc(var(--title-fs) * .3 + 8px); }
   .hero__stage { order: 3; position: relative; left: auto; width: auto; transform: none; z-index: 0; margin-inline: calc(var(--gutter) * -1); min-height: calc(var(--ch) + 76px); align-self: stretch; }
   .hero__left { order: 1; gap: 8px; }
   .hero__right { order: 2; justify-items: start; text-align: left; gap: 10px; }
@@ -1311,7 +1314,9 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
   .agent__draft { left: 8px; right: 8px; bottom: 8px; padding: 12px; gap: 8px; max-height: calc(100% - 62px); }
   .agent__draft-icon { width: 30px; height: 30px; }
   .agent__draft-sub { font-size: .78rem; }
-  .agent__draft input, .agent__draft textarea { padding: 8px 10px; font-size: .84rem; }
+  /* 16px stops iPhones zooming the page in when a field is focused */
+  .agent__form input, .agent__draft input, .agent__draft textarea { font-size: 16px; }
+  .agent__draft input, .agent__draft textarea { padding: 8px 10px; }
   .agent__draft textarea { min-height: 92px; }
 }
 
