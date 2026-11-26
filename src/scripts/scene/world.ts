@@ -503,7 +503,7 @@ export async function createWorld(opts: {
     return t;
   };
   const hitMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
-  const touchUI = !matchMedia('(hover: hover) and (pointer: fine)').matches; // phones: "tap again" on the backs
+  const touchUI = !matchMedia('(hover: hover) and (pointer: fine)').matches; // phones: flipped cards grow less
   wheelCards.forEach((spec, i) => {
     const tex = cardTex(drawCard(spec, i, wheelCards.length, spec.motif === 'profile' ? photo : null));
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, side: THREE.FrontSide });
@@ -511,7 +511,7 @@ export async function createWorld(opts: {
     mesh.userData.id = spec.id;
     mesh.renderOrder = 7;
     const backMat = new THREE.MeshBasicMaterial({
-      map: cardTex(drawCardBack(spec, i, wheelCards.length, spec.motif === 'profile' ? about : undefined, touchUI)),
+      map: cardTex(drawCardBack(spec, i, wheelCards.length, spec.motif === 'profile' ? about : undefined)),
       transparent: true, toneMapped: false, side: THREE.FrontSide,
     });
     const back = new THREE.Mesh(cardGeo, backMat);
@@ -738,7 +738,7 @@ export async function createWorld(opts: {
     U.uCoreRot.value.setFromMatrix4(m4);
 
     // Cards glide right → left along a gentle arch; scrolling (either way) speeds them up,
-    // hovering a card slows the strip right down so it's easy to click.
+    // hovering (or, on phones, tapping) a card slows the strip right down so it's easy to read.
     wheelVel = damp(wheelVel, Math.min(Math.abs(input.velocity) * 3, 300), 4, dt);
     if (pinnedId && expand > 0.25) pinnedId = null; // scrolled away: let it go
     pace = damp(pace, hoveredCard || pinnedId ? 0.12 : 1, 5, dt);

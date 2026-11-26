@@ -428,7 +428,7 @@ export type CardAbout = { headline: string; text: string; keywords: string[]; fo
 
 /** Back of a hero card (it flips on hover): "where I've used it" for tech cards, a short "about me"
  *  with search keywords for the profile card. Same poster language as the fronts. */
-export function drawCardBack(spec: CardSpec, index: number, total: number, about?: CardAbout, touch = false): HTMLCanvasElement {
+export function drawCardBack(spec: CardSpec, index: number, total: number, about?: CardAbout): HTMLCanvasElement {
   const cv = document.createElement('canvas');
   cv.width = CARD_W;
   cv.height = CARD_H;
@@ -520,9 +520,6 @@ export function drawCardBack(spec: CardSpec, index: number, total: number, about
       for (const l of wrap(ctx, it.what, W)) { y += 38; ctx.fillText(l, P, y); }
       y += 12;
     }
-    ctx.font = `600 16px ${MONO}`;
-    ctx.fillStyle = acc;
-    spaced(ctx, touch ? 'TAP AGAIN TO EXPLORE  ↗' : 'CLICK TO EXPLORE  ↗', P, CARD_H - P - 6, 1.2);
   }
   rr(ctx, 1.5, 1.5, CARD_W - 3, CARD_H - 3, 39);
   ctx.strokeStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';

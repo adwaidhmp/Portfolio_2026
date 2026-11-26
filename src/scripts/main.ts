@@ -389,21 +389,22 @@ if (cursor && finePointer && root.classList.contains('has-cursor')) {
 }
 
 /* ---------- Mouse for the 3D world + card picking ---------- */
+// Hero cards don't link anywhere: hovering one flips it to its back (the flip itself is in the 3D scene).
+// Hover follows any mouse or pen at every screen size; touch is handled separately below.
 let pickX = -1, pickY = -1;
-let pickBlocked = false; // pointer is on the name, the hero text or a link/button (all in front of the cards)
+let pickBlocked = false; // pointer is on something in front of the cards (links, buttons, the name)
+const wideHero = matchMedia('(min-width: 821px)'); // wide layout: the side text panels also sit in front of the cards
 window.addEventListener('pointermove', (e) => {
   input.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
   input.mouseY = -((e.clientY / window.innerHeight) * 2 - 1);
+  if (e.pointerType === 'touch') return;
   pickX = e.clientX; pickY = e.clientY;
-  pickBlocked = !!(e.target as Element | null)?.closest?.('.hero__title, .hero__left, .hero__right, a, button');
+  pickBlocked = !!(e.target as Element | null)?.closest?.(wideHero.matches ? '.hero__title, .hero__left, .hero__right, a, button' : '.hero__title, a, button');
 }, { passive: true });
-// Clicking a hero card jumps to where that tech is shown
-const cardTargets: Record<string, string> = {
-  profile: 'about', python: 'skills', llm: 'experience', fastapi: 'skills', celery: 'skills', graph: 'projects',
-  rag: 'projects', docker: 'skills', sql: 'skills', react: 'skills', django: 'skills', mcp: 'experience',
-};
+document.documentElement.addEventListener('mouseleave', () => { pickX = -1; world?.pickCard(-1e5, -1e5); });
 let hoveredCard: string | null = null;
-// Touch screens have no hover: the first tap flips a card to its back, a second tap opens its section
+// Touch has no hover, so a finger landing on a card stands in for it: the card flips straight away and stays
+// flipped; touching another card flips that one instead, touching it again (or empty space) flips it back.
 let pinnedCard: string | null = null;
 let pinT = 0;
 function pin(id: string | null) {
@@ -412,16 +413,12 @@ function pin(id: string | null) {
   clearTimeout(pinT);
   if (id) pinT = window.setTimeout(() => pin(null), 6000); // flips back by itself after a while
 }
-$('[data-hero]')?.addEventListener('click', (e) => {
-  if ((e.target as HTMLElement).closest('a, button, .hero__title, .hero__left, .hero__right')) return;
-  if (!finePointer) {
-    const id = world?.cardAt(e.clientX, e.clientY) ?? null;
-    if (id && id === pinnedCard) { pin(null); if (cardTargets[id]) goTo(cardTargets[id]); }
-    else pin(id); // tapping empty space flips the open card back
-    return;
-  }
-  if (hoveredCard && cardTargets[hoveredCard]) goTo(cardTargets[hoveredCard]);
-});
+$('[data-hero]')?.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  if ((e.target as HTMLElement).closest('a, button, input, textarea')) return;
+  const id = world?.cardAt(e.clientX, e.clientY) ?? null;
+  pin(id && id === pinnedCard ? null : id);
+}, { passive: true });
 
 /* ---------- Project cards: tilt + flip ---------- */
 $$('[data-pcard]').forEach((card) => {
@@ -681,7 +678,7 @@ gsap.ticker.add((time, deltaMs) => {
   // world
   if (world) {
     world.setPaused(canvasCovered());
-    if (finePointer && pickX >= 0 && y < window.innerHeight) {
+    if (pickX >= 0 && y < window.innerHeight) {
       const id = pickBlocked ? world.pickCard(-1e5, -1e5) : world.pickCard(pickX, pickY);
       if (id !== hoveredCard) {
         hoveredCard = id;
