@@ -1,15 +1,40 @@
 /* "Ask my AI agent" — a terminal-style chat that answers only from the
    portfolio data, using keyword matching. No API keys, so it never breaks. */
-import { profile, about, skills, experience, projects, education, contact } from '../data/portfolio';
+import { profile, about, skills, experience, projects, education, contact, openRoles, workPrefs } from '../data/portfolio';
 
 type Seg = { text: string; href?: string };
-type Answer = { tool: string; result: string; segs: Seg[]; section?: string; sectionLabel?: string };
+type Answer = { tool: string; result: string; segs: Seg[]; section?: string; sectionLabel?: string; id?: string };
 type Key = string | [string, number];
-type Intent = { id: string; keys: Key[]; answer: () => Answer };
+/** `re` matches whole phrasings (greetings, small talk); a match adds `reScore` (default 6). */
+type Intent = { id: string; keys: Key[]; re?: RegExp; reScore?: number; answer: () => Answer };
 
 const T = (text: string, href?: string): Seg => ({ text, href });
 const current = experience.find((r) => r.current) ?? experience[0];
 const cat = (id: string) => skills.find((c) => c.id === id);
+
+/* small-talk helpers */
+const partOfDay = () => { const h = new Date().getHours(); return h < 5 ? 'Hey' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
+function timeAnswer(): Answer {
+  const now = new Date();
+  const here = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const t = (timeZone?: string) => now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) });
+  const d = (timeZone?: string) => now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', ...(timeZone ? { timeZone } : {}) });
+  // same zone (also catches aliases like Asia/Calcutta = Asia/Kolkata): just say it once
+  const same = here === workPrefs.timeZone || (t() === t(workPrefs.timeZone) && d() === d(workPrefs.timeZone));
+  return {
+    tool: `get_time(tz="${here}")`,
+    result: 'ok',
+    segs: [T(same
+      ? `It's ${t()} on ${d()} (IST) — the same time zone as ${profile.firstName} in ${profile.locality}, India.`
+      : `It's ${t()} on ${d()} where you are.\nIn ${profile.locality}, India (${profile.firstName}'s time zone, IST) it's ${t(workPrefs.timeZone)} on ${d(workPrefs.timeZone)}.`)],
+  };
+}
+const jokes = [
+  'Why did the AI agent cross the road? It was the next step in its plan. 🙂',
+  'An LLM walks into a bar. The bartender asks, "What will it be?" It says, "Let me predict the next token…" 🙂',
+  "I'd tell you a joke about RAG, but I'd have to retrieve it first. 🙂",
+];
+let jokeAt = 0;
 
 const intents: Intent[] = [
   {
@@ -126,12 +151,15 @@ const intents: Intent[] = [
   },
   {
     id: 'hire',
-    keys: ['hire', 'hiring', 'freelance', 'available', 'availability', 'open to', 'job', 'role', 'notice', 'join', 'opportunit', 'recruit'],
+    keys: ['hire', 'hiring', 'freelance', 'available', 'availability', 'open to', 'job', 'role', 'position', 'vacanc', 'notice', 'join', 'opportunit', 'recruit', 'full time', 'genai', 'generative'],
     answer: () => ({
       tool: 'get_availability()',
       result: 'available',
       section: 'contact', sectionLabel: 'Contact',
-      segs: [T(`${profile.availability}.\nBest way to start: `), T(contact.email, `mailto:${contact.email}`)],
+      segs: [
+        T(`He's open to all AI roles: ${openRoles.join(', ')}.\nFull-time, remote or freelance — and open to relocation, including the GCC.\nBest way to start: `),
+        T(contact.email, `mailto:${contact.email}`),
+      ],
     }),
   },
   {
@@ -204,12 +232,106 @@ const intents: Intent[] = [
     }),
   },
   {
+    id: 'salary',
+    keys: [['salary', 4], ['ctc', 4], ['compensation', 4], ['lpa', 4], ['package', 3], ['expectation', 2], ['expected', 2], 'pay', 'wage', 'stipend', 'how much', 'earn', 'hourly rate', 'remuneration', 'budget'],
+    answer: () => ({
+      tool: 'get_preferences(field="salary")',
+      result: 'ok',
+      section: 'contact', sectionLabel: 'Contact',
+      segs: [
+        T(`${profile.firstName}'s expected salary is around ${workPrefs.salary}. ${workPrefs.hours} work well for him, and he values ${workPrefs.balance}.\nWant to discuss a role? Reach him at `),
+        T(contact.email, `mailto:${contact.email}`),
+      ],
+    }),
+  },
+  {
+    id: 'hours',
+    keys: [['working hours', 5], ['work hours', 5], ['working time', 5], ['work timing', 5], ['office hours', 5], ['timings', 3], ['shift', 4], ['9 to 6', 5], ['9 6', 3], ['nine to six', 5], ['work life', 5], ['balance', 3], ['schedule', 3], ['hours', 2], 'night', 'weekend', 'overtime', 'flexible'],
+    answer: () => ({
+      tool: 'get_preferences(field="hours")',
+      result: 'ok',
+      segs: [T(`${workPrefs.hours} are fine for him, and he values ${workPrefs.balance}. He's open to full-time, remote or freelance work, and to relocation, including the GCC.`)],
+    }),
+  },
+  {
+    id: 'time',
+    keys: [],
+    re: /\b(what s|what is|whats|tell me) the (time|date)\b|\bwhat time is it\b|\btime (now|is it|right now)\b|\bcurrent (time|date)\b|\bwhat day is (it|today)\b|\btoday s date\b|\blocal time\b|\btime in (india|kerala|kannur)\b/,
+    answer: timeAnswer,
+  },
+  /* ---------- small talk ---------- */
+  {
     id: 'hello',
-    keys: ['hi', 'hello', 'hey', 'yo', 'hola', 'namaste', 'good morning', 'good evening'],
+    keys: [],
+    re: /^\s*(hi+|hy+|hey+|heya|hai|hello+|helo|hellow|hola|namaste|namaskaram|yo|hiya|howdy|greetings|good (morning|afternoon|evening|day))( (there|bro|buddy|agent|adwaidh|team|all|everyone|sir|mam|madam))?\s*[.!]*\s*$/,
     answer: () => ({
       tool: 'greet()',
       result: 'ok',
-      segs: [T("Hey! I'm Adwaidh's portfolio agent. Ask me what he's built, his MCP work, his stack, relocation, or how to reach him.")],
+      segs: [T(`${partOfDay()}! 👋 I'm ${profile.firstName}'s portfolio agent. Ask me what he's built, his skills and experience, the roles he's open to, or how to reach him.`)],
+    }),
+  },
+  {
+    id: 'how-are-you',
+    keys: [],
+    re: /\b(how are (you|u)|how r (you|u)|how s it going|how is it going|how are things|how do you do|what s up|whats up|wassup|sup)\b/,
+    reScore: 5,
+    answer: () => ({
+      tool: 'status()',
+      result: 'all systems green',
+      segs: [T(`Doing great, thanks for asking! 😊 How can I help — want to hear what ${profile.firstName} has built?`)],
+    }),
+  },
+  {
+    id: 'identity',
+    keys: [],
+    re: /\b(who are (you|u)|what are (you|u)|are (you|u) (a |an )?(bot|ai|human|real|robot|person|chatgpt|claude|gpt)|your name|who (made|built|created) (you|u)|what is this chat)\b/,
+    answer: () => ({
+      tool: 'whoami()',
+      result: 'ok',
+      segs: [T(`I'm ${profile.firstName}'s portfolio agent — a small assistant he built into this site. I answer only from his portfolio (no guessing), point you to the right section, and can help you send him a message.`)],
+    }),
+  },
+  {
+    id: 'help',
+    keys: [],
+    re: /(^\s*help\s*[.!]*\s*$)|\b(what can (you|u|i) (do|ask)|help me|what do you know|what can you tell( me)?|how does this work|how do i use (this|you))\b/,
+    reScore: 5,
+    answer: () => ({
+      tool: 'list_tools()',
+      result: 'ok',
+      segs: [T(`I can tell you about ${profile.firstName}'s AI work, MCP servers, tech stack, backend and DevOps experience, projects, education, the roles he's open to, salary expectations, working hours, the time in India, or how to contact him. Just ask!`)],
+    }),
+  },
+  {
+    id: 'thanks',
+    keys: [],
+    re: /^\s*(ok(ay)?|k|kk|cool|nice|great|awesome|perfect|super|wow|got it|good|alright|fine|thanks?|thank (you|u)|thx|ty|tysm|cheers)( (thanks?|thank (you|u)|a lot|so much|man|bro|buddy|dude|mate|again))*\s*[.!]*\s*$/,
+    answer: () => ({
+      tool: 'ack()',
+      result: 'ok',
+      segs: [T("You're welcome! 😊 Anything else? Ask about his projects, skills, salary expectations or how to reach him.")],
+    }),
+  },
+  {
+    id: 'bye',
+    keys: [],
+    re: /^\s*(bye+|goodbye|good bye|see (you|ya|u)|cya|later|take care|good night|gn)\b/,
+    answer: () => ({
+      tool: 'goodbye()',
+      result: 'ok',
+      section: 'contact', sectionLabel: 'Contact',
+      segs: [T(`Thanks for stopping by! 👋 If you'd like to work with ${profile.firstName}, the contact section is one click away.`)],
+    }),
+  },
+  {
+    id: 'joke',
+    keys: [],
+    re: /\b(joke|jokes|funny|make me laugh|bored)\b/,
+    reScore: 5,
+    answer: () => ({
+      tool: 'tell_joke()',
+      result: 'ok',
+      segs: [T(`${jokes[jokeAt++ % jokes.length]}\nWant to see the real agents ${profile.firstName} has built? Just ask.`)],
     }),
   },
 ];
@@ -224,13 +346,14 @@ function route(q: string): Answer {
       const [k, w] = typeof key === 'string' ? [key, key.length > 5 ? 2 : 1] : key;
       if (k.length <= 3 ? new RegExp(`\\b${k}\\b`).test(s) : s.includes(k)) score += w;
     }
+    if (it.re?.test(s)) score += it.reScore ?? 6;
     if (score > bestScore) { bestScore = score; best = it; }
   }
-  if (best) return best.answer();
+  if (best) return { ...best.answer(), id: best.id };
   return {
     tool: 'search_portfolio(query=…)',
     result: '0 matches',
-    segs: [T("I only know what's on this portfolio, and I couldn't find that. Try: what he's built, MCP, tech stack, experience, projects, relocation or contact.")],
+    segs: [T(`Hmm, I'm not sure about that one — I only know what's on ${profile.firstName}'s portfolio. Try asking about his AI work, skills, experience, the roles he's open to, salary expectations, working hours or how to contact him.`)],
   };
 }
 
@@ -294,6 +417,7 @@ export function initAgentChat(deps: {
     u.appendChild(ut);
 
     const ans = route(q);
+    asked.push({ q: q.trim(), topic: !!ans.id && !SMALL_TALK.has(ans.id) });
     const a = msg('agent');
     const tool = document.createElement('div');
     tool.className = 'msg__tool';
@@ -325,7 +449,113 @@ export function initAgentChat(deps: {
     }
     scrollLog();
     busy = false;
+    // every 2 messages, offer a ready-made message to Adwaidh (until the visitor has sent one)
+    if (!draftSent && asked.length % DRAFT_EVERY === 0) setTimeout(openDraft, deps.reduced ? 0 : 700);
   }
+
+  /* ---------- "Message Adwaidh?" card ---------- */
+  const DRAFT_EVERY = 2;
+  // every message counts towards the card; only real questions (not "hi", "thanks"…) go into the draft
+  const SMALL_TALK = new Set(['hello', 'how-are-you', 'identity', 'help', 'thanks', 'bye', 'joke', 'time']);
+  const asked: { q: string; topic: boolean }[] = [];
+  let draftSent = false;
+  const draft = panel.querySelector<HTMLFormElement>('[data-agent-draft]');
+  const dStatus = draft?.querySelector<HTMLElement>('[data-draft-status]');
+  const field = (n: string) => draft?.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${n}"]`) ?? null;
+  const edited = new Set<string>(); // fields the visitor typed in: never overwrite those
+  draft?.addEventListener('input', (e) => {
+    const n = (e.target as HTMLInputElement).name;
+    if (n) edited.add(n);
+    (e.target as HTMLElement).removeAttribute('aria-invalid');
+    if (dStatus) { dStatus.textContent = ''; dStatus.className = 'agent__draft-status'; }
+  });
+  const isDraftOpen = () => draft?.dataset.open === 'true';
+
+  function draftBody() {
+    const qs = [...new Set(asked.filter((a) => a.topic).map((a) => a.q))].slice(-6).map((q) => `• ${q}`).join('\n');
+    const intro = qs ? `I was chatting with your portfolio agent and asked about:\n${qs}` : 'I was chatting with your portfolio agent.';
+    return `Hi ${profile.firstName},\n\n${intro}\n\nI'd like to talk with you about an opportunity. Could we set up a quick call?\n\nThanks,`;
+  }
+  function openDraft() {
+    if (!draft || draftSent || panel!.dataset.open !== 'true') return;
+    const subject = field('subject'), message = field('message');
+    if (subject && !edited.has('subject')) subject.value = `Opportunity for ${profile.firstName} (via your portfolio agent)`;
+    if (message && !edited.has('message')) message.value = draftBody();
+    if (dStatus) { dStatus.textContent = ''; dStatus.className = 'agent__draft-status'; }
+    draft.inert = false;
+    draft.dataset.open = 'true';
+    panel!.classList.add('has-draft');
+    draft.scrollTop = 0;
+  }
+  function closeDraft() {
+    if (!draft) return;
+    draft.dataset.open = 'false';
+    draft.inert = true;
+    panel!.classList.remove('has-draft');
+  }
+  function agentSays(text: string) {
+    const a = msg('agent');
+    const t = document.createElement('div');
+    t.className = 'msg__text';
+    a.appendChild(t);
+    typeInto(t, [T(text)]);
+    scrollLog();
+  }
+
+  draft?.querySelector('[data-draft-ignore]')?.addEventListener('click', () => {
+    closeDraft();
+    input!.focus({ preventScroll: true });
+  });
+  draft?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = field('name')?.value.trim() ?? '';
+    const emailEl = field('email') as HTMLInputElement | null;
+    const email = emailEl?.value.trim() ?? '';
+    const subject = field('subject')?.value.trim() ?? '';
+    const message = field('message')?.value.trim() ?? '';
+    const say = (t: string, kind = '') => { if (dStatus) { dStatus.textContent = t; dStatus.className = `agent__draft-status ${kind}`; } };
+    if (!email || !emailEl?.checkValidity()) {
+      emailEl?.setAttribute('aria-invalid', 'true');
+      emailEl?.focus();
+      say(`Add your email so ${profile.firstName} can reply.`, 'is-err');
+      return;
+    }
+    if (!subject || !message) { say('Please add a subject and a message.', 'is-err'); return; }
+    const sign = `\n\n— ${name ? `${name} (${email})` : email}`;
+    const endpoint = draft.dataset.endpoint;
+    const sendBtn = draft.querySelector<HTMLButtonElement>('.agent__draft-send');
+    if (endpoint) {
+      // a form service (e.g. Formspree) delivers it straight to Adwaidh's inbox
+      say('Sending…');
+      if (sendBtn) sendBtn.disabled = true;
+      try {
+        const body = new FormData();
+        body.append('name', name || email);
+        body.append('email', email);
+        body.append('_replyto', email);
+        body.append('_subject', subject);
+        body.append('subject', subject);
+        body.append('message', message + sign);
+        const res = await fetch(endpoint, { method: 'POST', headers: { Accept: 'application/json' }, body });
+        if (!res.ok) throw new Error(String(res.status));
+        draftSent = true;
+        say('Sent ✓', 'is-ok');
+        setTimeout(closeDraft, deps.reduced ? 0 : 900);
+        agentSays(`Done — your message is on its way to ${profile.firstName}. He usually replies within a day.`);
+      } catch {
+        say(`Couldn't send right now. Please email ${draft.dataset.email} directly.`, 'is-err');
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    } else {
+      // static site without a form service: open the visitor's email app with everything filled in
+      draftSent = true;
+      say('Opening your email app with the message ready…', 'is-ok');
+      const href = `mailto:${draft.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message + sign)}`;
+      setTimeout(() => { window.location.href = href; closeDraft(); }, deps.reduced ? 0 : 600);
+      agentSays('Your email app should open with the message ready — just hit send.');
+    }
+  });
 
   /* ---------- Teaser popup: invites visitors to try the agent ---------- */
   const hint = document.querySelector<HTMLElement>('[data-agent-hint]');
@@ -374,6 +604,7 @@ export function initAgentChat(deps: {
     }
   }
   function shut(returnFocus = true) {
+    closeDraft();
     panel!.dataset.open = 'false';
     fab!.setAttribute('aria-expanded', 'false');
     if (returnFocus) fab!.focus({ preventScroll: true });
@@ -387,7 +618,11 @@ export function initAgentChat(deps: {
     if ((e.target as Element | null)?.closest?.('[data-agent], [data-agent-open], [data-agent-hint], [data-ask]')) return;
     shut(false);
   });
-  panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') shut(); });
+  panel.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (isDraftOpen()) closeDraft(); // first Escape closes the message card, the next one the chat
+    else shut();
+  });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = input.value;

@@ -69,8 +69,11 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
   cv.width = CARD_W;
   cv.height = CARD_H;
   const ctx = cv.getContext('2d')!;
-  const bg = BG[spec.bg];
-  const fg = FG[spec.bg];
+  // With a photo, the profile card becomes a dark portrait poster whatever its colour in cards.ts
+  const photoCard = spec.motif === 'profile' && !!photo;
+  const dark = photoCard || DARK(spec.bg);
+  const bg = photoCard ? C.black : BG[spec.bg];
+  const fg = photoCard ? C.white : FG[spec.bg];
   const acc = spec.bg === 'accent' ? C.black : C.accent; // accent that always contrasts with the card
   const P = 34; // padding
 
@@ -82,8 +85,8 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
 
   // subtle print grain
   const rnd = seeded(index * 97 + 13);
-  ctx.globalAlpha = DARK(spec.bg) ? 0.06 : 0.05;
-  ctx.fillStyle = DARK(spec.bg) ? '#fff' : '#000';
+  ctx.globalAlpha = dark ? 0.06 : 0.05;
+  ctx.fillStyle = dark ? '#fff' : '#000';
   for (let i = 0; i < 2600; i++) ctx.fillRect(rnd() * CARD_W, rnd() * CARD_H, 1.4, 1.4);
   ctx.globalAlpha = 1;
 
@@ -95,19 +98,26 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
   switch (spec.motif) {
     case 'profile': {
       if (photo) {
+        // portrait fills the card (cover-fit, anchored to the top so the face stays in frame)
         const ar = photo.width / photo.height;
-        const boxW = CARD_W, boxH = CARD_H * 0.78;
-        let w = boxW, h = boxW / ar;
-        if (h < boxH) { h = boxH; w = boxH * ar; }
+        let w = CARD_W, h = CARD_W / ar;
+        if (h < CARD_H) { h = CARD_H; w = CARD_H * ar; }
         ctx.save();
-        ctx.filter = 'grayscale(1) contrast(1.15)';
-        ctx.drawImage(photo, (boxW - w) / 2, 0, w, h);
+        ctx.filter = 'contrast(1.05) saturate(0.92)';
+        ctx.drawImage(photo, (CARD_W - w) / 2, 0, w, h);
         ctx.restore();
-        const g = ctx.createLinearGradient(0, boxH * 0.55, 0, boxH);
-        g.addColorStop(0, 'rgba(255,255,255,0)');
-        g.addColorStop(1, C.white);
+        // soft shade at the top and bottom so the white type reads
+        let g = ctx.createLinearGradient(0, 0, 0, 170);
+        g.addColorStop(0, 'rgba(17,17,17,0.6)');
+        g.addColorStop(1, 'rgba(17,17,17,0)');
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, CARD_W, boxH + 2);
+        ctx.fillRect(0, 0, CARD_W, 170);
+        g = ctx.createLinearGradient(0, CARD_H * 0.5, 0, CARD_H);
+        g.addColorStop(0, 'rgba(17,17,17,0)');
+        g.addColorStop(0.55, 'rgba(17,17,17,0.72)');
+        g.addColorStop(1, 'rgba(17,17,17,0.96)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, CARD_H * 0.5, CARD_W, CARD_H * 0.5);
       } else {
         ctx.fillStyle = C.accent;
         ctx.beginPath(); ctx.arc(cx, midY - 10, 170, 0, Math.PI * 2); ctx.fill();
@@ -121,7 +131,7 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = C.black;
+      ctx.fillStyle = fg;
       ctx.font = `700 19px ${DISPLAY}`;
       spaced(ctx, 'AI/ENG', CARD_W - P - 2, P + 22, 2, 'right');
       spaced(ctx, 'MMXXVI', CARD_W - P - 2, P + 46, 2, 'right');
@@ -366,12 +376,12 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
     ctx.fillText(spec.big, P - 4, CARD_H - P - 46);
   }
   if (spec.motif === 'profile') {
-    ctx.fillStyle = C.black;
+    ctx.fillStyle = fg;
     ctx.font = `800 40px ${DISPLAY}`;
     ctx.fillText('ADWAIDH MP', P, CARD_H - P - 46);
   }
   if (spec.sub) {
-    ctx.fillStyle = spec.bg === 'accent' ? 'rgba(17,17,17,0.72)' : DARK(spec.bg) ? C.muted : '#5a5a5a';
+    ctx.fillStyle = photoCard ? C.accent : spec.bg === 'accent' ? 'rgba(17,17,17,0.72)' : dark ? C.muted : '#5a5a5a';
     ctx.font = `600 16px ${DISPLAY}`;
     spaced(ctx, spec.sub.toUpperCase(), P, CARD_H - P - 6, 2);
   }
@@ -382,7 +392,7 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
   ctx.globalAlpha = 1;
   // hairline edge so dark cards read on a dark page and white cards on a white page
   rr(ctx, 1.5, 1.5, CARD_W - 3, CARD_H - 3, 39);
-  ctx.strokeStyle = DARK(spec.bg) ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+  ctx.strokeStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
   ctx.lineWidth = 2; ctx.stroke();
   return cv;
 }

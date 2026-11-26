@@ -6,7 +6,7 @@ import '@fontsource/instrument-serif/400-italic.css';
 import '../styles/global.css';
 import unboundedLatin from '@fontsource-variable/unbounded/files/unbounded-latin-wght-normal.woff2?url';
 import groteskLatin from '@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url';
-import { profile, seo, contact, skills, experience, education } from '../data/portfolio';
+import { profile, seo, contact, skills, experience, education, openRoles } from '../data/portfolio';
 
 interface Props {
   title?: string;
@@ -84,7 +84,7 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="keywords" content={seo.keywords.join(', ')} />
+    <meta name="keywords" content={Array.from(new Set([...seo.keywords, ...openRoles])).join(', ')} />
     <meta name="author" content={profile.name} />
     <link rel="canonical" href={canonical} />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />

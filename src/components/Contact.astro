@@ -1,5 +1,5 @@
 ---
-import { contact, profile } from '../data/portfolio';
+import { contact, profile, openRoles } from '../data/portfolio';
 const words = contact.heading.split(' ');
 ---
 <section id="contact" class="section section--dark contact" aria-labelledby="contact-title" data-section data-opaque>
@@ -50,7 +50,12 @@ const words = contact.heading.split(' ');
           </ul>
           <div class="contact__avail">
             <span class="dot-live" aria-hidden="true"></span>
-            <p style="margin:0">{profile.availability}</p>
+            <div>
+              <p style="margin:0">{profile.availability}</p>
+              <ul class="contact__roles" aria-label="AI roles I'm open to">
+                {openRoles.map((r) => <li>{r}</li>)}
+              </ul>
+            </div>
           </div>
           <div class="contact__ctas">
             <a class="btn btn--gold" href={profile.resume} download>Download resume <span class="arrow" aria-hidden="true">↓</span></a>

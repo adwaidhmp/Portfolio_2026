@@ -1,5 +1,5 @@
 ---
-import { agentSuggestions, profile } from '../data/portfolio';
+import { agentSuggestions, profile, contact } from '../data/portfolio';
 import AgentIcon from './AgentIcon.astro';
 ---
 <!-- Teaser popup that invites visitors to try the agent -->
@@ -52,6 +52,34 @@ import AgentIcon from './AgentIcon.astro';
     <button type="submit" aria-label="Send question">
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" /></svg>
     </button>
+  </form>
+
+  <!-- After every 2 messages the agent offers a ready-made message to Adwaidh (filled in by agent.ts):
+       the visitor adds their name + email, can edit the subject and message, then Send or Ignore. -->
+  <form class="agent__draft" data-agent-draft data-open="false" data-endpoint={contact.formEndpoint} data-email={contact.email}
+        role="dialog" aria-labelledby="agent-draft-title" novalidate inert>
+    <div class="agent__draft-head">
+      <span class="agent__draft-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 4.5h12v8H2zM2.5 5l5.5 4.2L13.5 5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" /></svg>
+      </span>
+      <div>
+        <p class="agent__draft-title" id="agent-draft-title">Message {profile.firstName}?</p>
+        <p class="agent__draft-sub">I drafted it from our chat. Add your details, edit anything, then send.</p>
+      </div>
+    </div>
+    <div class="agent__draft-row">
+      <label><span>Your name</span><input name="name" type="text" autocomplete="name" placeholder="Jane Doe" maxlength="80" /></label>
+      <label><span>Your email</span><input name="email" type="email" autocomplete="email" placeholder="you@company.com" maxlength="120" required /></label>
+    </div>
+    <label><span>Subject</span><input name="subject" type="text" maxlength="140" required /></label>
+    <label><span>Message</span><textarea name="message" rows="5" maxlength="2000" required></textarea></label>
+    <p class="agent__draft-status" role="status" aria-live="polite" data-draft-status></p>
+    <div class="agent__draft-actions">
+      <button type="button" class="agent__draft-ignore" data-draft-ignore>Ignore</button>
+      <button type="submit" class="agent__draft-send">Send
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" /></svg>
+      </button>
+    </div>
   </form>
 </section>
 <div class="toast" role="status" aria-live="polite" data-toast></div>

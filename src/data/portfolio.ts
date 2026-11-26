@@ -5,6 +5,23 @@
    it up automatically.
    ========================================================================== */
 
+/** AI roles you're open to. Shown in the contact section, the big banner, the AI agent's answers
+ *  and the search-engine keywords — add or remove titles here. */
+export const openRoles = [
+  'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI Engineer', 'Applied AI Engineer',
+  'AI Agent Developer', 'AI/ML Engineer', 'Python AI Developer', 'RAG Engineer', 'Conversational AI Developer',
+  'AI Automation Engineer', 'AI Integration Engineer', 'AI Solutions Engineer', 'Prompt Engineer',
+];
+
+/** Job preferences the AI agent shares when a visitor asks (they aren't shown on the page). */
+export const workPrefs = {
+  salary: '₹30,000 – ₹50,000 per month',
+  hours: '9 AM – 6 PM shifts',
+  balance: 'a good work-life balance',
+  /** Your time zone, used when someone asks the agent for the time. */
+  timeZone: 'Asia/Kolkata',
+};
+
 export const profile = {
   name: 'Adwaidh MP',
   firstName: 'Adwaidh',
@@ -17,20 +34,20 @@ export const profile = {
   region: 'Kerala',
   country: 'IN',
   relocation: 'Open to relocation (including the GCC)',
-  availability: 'Open to AI / LLM engineering roles · Open to relocation, including the GCC · Available for freelance AI & Python projects',
+  availability: 'Open to all AI roles — AI Engineer, Agentic AI, LLM, Generative AI and more · Full-time, remote or freelance · Open to relocation, including the GCC',
   /** Words cycled by the typing animation in the hero. */
   typing: ['AI Agents', 'MCP Servers', 'Agentic Chat', 'Python Backends', 'LLM-Powered Products'],
   /** Drop your resume at public/resume/Adwaidh-MP-Resume.pdf */
   resume: '/resume/Adwaidh-MP-Resume.pdf',
-  /** Optional: put a square-ish photo at public/images/me.jpg and set this to '/images/me.jpg'.
-   *  It appears (in black & white) on the centre card of the hero wheel. */
-  photo: '' as string,
+  /** Portrait shown on the "Adwaidh MP" card in the hero strip (a dark poster card with the photo
+   *  filling it). Set to '' to go back to the "AM" monogram card. */
+  photo: '/images/me.jpg' as string,
 };
 
 export const seo = {
   title: 'Adwaidh MP — AI Engineer | Agentic AI & Python',
   description:
-    'Adwaidh MP — AI Engineer & Python developer in Kerala, India. Builds AI agents, MCP servers and RAG systems. Open to AI/LLM roles, freelance & GCC relocation.',
+    'Adwaidh MP — AI Engineer & Python developer in Kerala, India. Builds AI agents, MCP servers and RAG systems. Open to AI, agentic AI, LLM & GenAI roles.',
   keywords: [
     'AI Engineer', 'LLM Engineer', 'Agentic AI developer', 'AI agent developer', 'MCP server developer',
     'Python developer', 'Django developer', 'FastAPI developer', 'software developer for hire',
@@ -42,7 +59,7 @@ export const seo = {
 
 export const about = {
   summary:
-    'AI-focused Python developer with 1.5+ years of experience building LLM-powered products. At Desklog (SaaS), I build agentic AI systems in production: an autonomous coding agent on the Claude API, MCP servers that connect the product to Claude and ChatGPT, and an in-app AI agent that answers data questions and takes actions from chat. Strong Python backend skills (Django, DRF, FastAPI, Celery, Redis), DevOps and cloud deployment experience (Docker, AWS EC2/RDS/S3, Cloudflare, Contabo, Nginx reverse proxy, PM2), and hands-on RAG and LangGraph work. Seeking AI/LLM engineering roles.',
+    'AI-focused Python developer with 1.5+ years of experience building LLM-powered products. At Desklog (SaaS), I build agentic AI systems in production: an autonomous coding agent on the Claude API, MCP servers that connect the product to Claude and ChatGPT, and an in-app AI agent that answers data questions and takes actions from chat. Strong Python backend skills (Django, DRF, FastAPI, Celery, Redis), DevOps and cloud deployment experience (Docker, AWS EC2/RDS/S3, Cloudflare, Contabo, Nginx reverse proxy, PM2), and hands-on RAG and LangGraph work. Open to AI Engineer, Agentic AI Developer, LLM Engineer, Generative AI and other AI roles.',
   highlights: [
     { value: 1.5, decimals: 1, suffix: '+', label: 'Years hands-on experience' },
     { value: 4, decimals: 0, suffix: '', label: 'Production AI systems built at Desklog' },
@@ -201,7 +218,7 @@ export const agentSuggestions = [
   'How does he use RAG & LangGraph?',
   'Show me his projects',
   'Where has he worked?',
-  'Is he available for freelance?',
+  'What roles is he open to?',
   'Is he open to relocation?',
   "What's his education?",
   'Can I download his resume?',
@@ -209,4 +226,7 @@ export const agentSuggestions = [
 ];
 
 /** Words that scroll in the red marquee strips. */
+/** The big banner between Skills and Experience. */
+export const availabilityBanner = ['Open to AI roles', 'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI Engineer', 'Applied AI Engineer', 'Full-time', 'Freelance', 'Remote', 'Open to GCC relocation'];
+
 export const marquee = ['AI Agents', 'MCP Servers', 'Agentic Chat', 'Claude API', 'LangGraph', 'RAG', 'Python Backends', 'FastAPI', 'Django'];

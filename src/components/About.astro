@@ -1,6 +1,6 @@
 ---
 import SectionHeader from './SectionHeader.astro';
-import { about } from '../data/portfolio';
+import { about, profile } from '../data/portfolio';
 
 // Emphasise key phrases in the summary (keeps the data file plain text).
 const emphasis = ['agentic AI systems in production', 'autonomous coding agent on the Claude API', 'MCP servers', 'DevOps and cloud deployment', 'RAG and LangGraph'];
@@ -13,7 +13,19 @@ const tone = ['stat--gold', '', '', 'stat--light'];
 <section id="about" class="section" aria-labelledby="about-title" data-section>
   <div class="container-x">
     <SectionHeader index="01" label="About" title="Who I am" id="about-title" />
-    <div class="about__grid">
+    <div class:list={['about__grid', profile.photo && 'has-photo']}>
+      {profile.photo && (
+        <figure class="about__photo" data-reveal>
+          <img src={profile.photo} alt={`Portrait of ${profile.name}`} width="534" height="721" loading="lazy" decoding="async" />
+          <figcaption>
+            <span class="about__photo-tag t-micro"><i aria-hidden="true"></i> Open to work</span>
+            <span>
+              <span class="about__photo-name">{profile.name}</span>
+              <span class="about__photo-role t-micro">{profile.shortTitle} · {profile.location}</span>
+            </span>
+          </figcaption>
+        </figure>
+      )}
       <div class="glass about__summary" data-reveal>
         <p set:html={summary} />
         <div class="about__tags">

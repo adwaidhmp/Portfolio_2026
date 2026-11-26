@@ -28,7 +28,7 @@ let world: World | null = null;
 /* ---------- Smooth scroll ---------- */
 let lenis: Lenis | null = null;
 if (!reduced) {
-  lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, anchors: { offset: -70 }, autoRaf: false });
+  lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9, anchors: { offset: -70, duration: 1.2 }, autoRaf: false });
   lenis.on('scroll', () => ScrollTrigger.update());
   gsap.ticker.add((t) => lenis!.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
@@ -37,8 +37,35 @@ if (!reduced) {
 function goTo(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (lenis) lenis.scrollTo(el, { offset: -70, duration: 1.6 });
+  revealIn(el);
+  tuckNav();
+  if (lenis) lenis.scrollTo(el, { offset: -70, duration: 1.2 });
   else el.scrollIntoView({ behavior: 'auto' });
+}
+
+/** Jumping to a section (nav, Hire me, the agent): start its reveal animations right away so the
+ *  content (e.g. the contact form) is already in place when the scroll lands, instead of only
+ *  starting to fade in once it arrives. The scroll-triggered reveals later find it done. */
+function revealIn(section: Element | null) {
+  if (!section || reduced) return;
+  const opts = { duration: 0.8, ease: 'expo.out', delay: 0.35, overwrite: true } as const;
+  gsap.to(section.querySelectorAll('[data-reveal]'), { ...opts, opacity: 1, y: 0, rotateX: 0, stagger: 0.04 });
+  gsap.to(section.querySelectorAll('[data-split] .w'), { ...opts, yPercent: 0, rotate: 0, stagger: 0.04 });
+  gsap.to(section.querySelectorAll('[data-script]'), { ...opts, clipPath: 'inset(-30% 0% -30% 0)' });
+}
+document.addEventListener('click', (e) => {
+  const a = (e.target as Element | null)?.closest?.('a[href^="#"]');
+  const id = a?.getAttribute('href')?.slice(1);
+  const target = id ? document.getElementById(id) : null;
+  if (target?.matches('[data-section]')) { revealIn(target); tuckNav(); }
+}, true);
+
+/** The top nav slides away while the page jumps to a section, so the section's header can sit right
+ *  at the top of the screen; scrolling up afterwards brings the nav back as usual. */
+let navTuckedUntil = 0;
+function tuckNav() {
+  navTuckedUntil = performance.now() + 1500;
+  document.querySelector('[data-nav]')?.classList.add('is-hidden');
 }
 
 /* ---------- Loader ---------- */
@@ -170,9 +197,9 @@ if (!reduced) {
   gsap.set('[data-reveal]', { y: 50 });
   gsap.set('[data-reveal="tilt"]', { y: 70, rotateX: -16, transformPerspective: 1200, transformOrigin: '50% 0%' });
   ScrollTrigger.batch('[data-reveal]', {
-    start: 'top 88%',
+    start: 'top 92%',
     once: true,
-    onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, rotateX: 0, duration: 1.3, ease: 'expo.out', stagger: 0.09, overwrite: true }),
+    onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, rotateX: 0, duration: 0.95, ease: 'expo.out', stagger: 0.06, overwrite: true }),
   });
 
   $$('[data-split]').forEach((h) => {
@@ -180,7 +207,7 @@ if (!reduced) {
     gsap.set(words, { yPercent: 110, rotate: 4 });
     ScrollTrigger.create({
       trigger: h, start: 'top 86%', once: true,
-      onEnter: () => gsap.to(words, { yPercent: 0, rotate: 0, duration: 1.3, ease: 'expo.out', stagger: 0.07 }),
+      onEnter: () => gsap.to(words, { yPercent: 0, rotate: 0, duration: 1.05, ease: 'expo.out', stagger: 0.06 }),
     });
     // slow cinematic drift while scrolling (desktop only — on phones it would push titles past the edge)
     if (!mobile) {
@@ -191,7 +218,7 @@ if (!reduced) {
     gsap.set(s, { clipPath: 'inset(-30% 100% -30% 0)' });
     ScrollTrigger.create({
       trigger: s, start: 'top 85%', once: true,
-      onEnter: () => gsap.to(s, { clipPath: 'inset(-30% 0% -30% 0)', duration: 1.6, ease: 'power2.inOut', delay: 0.35 }),
+      onEnter: () => gsap.to(s, { clipPath: 'inset(-30% 0% -30% 0)', duration: 1.1, ease: 'power2.inOut', delay: 0.2 }),
     });
   });
 
@@ -334,6 +361,7 @@ let lastY = window.scrollY;
 function navOnScroll(y: number) {
   if (!navEl) return;
   const dy = y - lastY;
+  if (performance.now() < navTuckedUntil) { lastY = y; return; } // jumping to a section: keep it tucked away
   if (y > window.innerHeight * 0.8 && dy > 6) navEl.classList.add('is-hidden');
   else if (dy < -6 || y < 200) navEl.classList.remove('is-hidden');
   lastY = y;
