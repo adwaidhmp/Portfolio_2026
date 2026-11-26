@@ -84,7 +84,7 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="keywords" content={Array.from(new Set([...seo.keywords, ...openRoles])).join(', ')} />
+    <meta name="keywords" content={Array.from(new Set([...seo.keywords, ...profile.keywords, ...openRoles])).join(', ')} />
     <meta name="author" content={profile.name} />
     <link rel="canonical" href={canonical} />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />

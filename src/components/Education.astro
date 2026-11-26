@@ -5,7 +5,7 @@ import { education } from '../data/portfolio';
 <section id="education" class="section" aria-labelledby="education-title" data-section style="padding-top:0">
   <div class="container-x">
     <SectionHeader index="05" label="Education" title="Credentials" script="always learning" id="education-title" />
-    <ul class="edu__grid" role="list" style="list-style:none;margin:0;padding:0">
+    <ul class="edu__grid" role="list" data-edu>
       {education.map((e) => (
         <li class="badge glass" data-reveal="tilt">
           <svg class="badge__seal" viewBox="0 0 64 64" fill="none" aria-hidden="true">
@@ -24,5 +24,9 @@ import { education } from '../data/portfolio';
         </li>
       ))}
     </ul>
+    <!-- phones: the cards are a sideways row; dots show where you are (and can be tapped) -->
+    <div class="edu__dots" data-edu-dots aria-hidden="true">
+      {education.map((_, i) => <button type="button" tabindex="-1" data-i={i}></button>)}
+    </div>
   </div>
 </section>

@@ -314,7 +314,8 @@ const navLinks = $$<HTMLAnchorElement>('[data-nav-link]');
 const indicator = $('[data-nav-indicator]');
 const navEl = $('[data-nav]');
 function setActive(id: string | null) {
-  navLinks.forEach((a) => a.setAttribute('aria-current', String(a.dataset.navLink === id)));
+  // the phone bar's Home button counts as active while you're on the hero (id === null)
+  navLinks.forEach((a) => a.setAttribute('aria-current', String(a.dataset.navLink === (id ?? 'top'))));
   const a = navLinks.find((l) => l.dataset.navLink === id);
   if (indicator) {
     if (a) {
@@ -333,7 +334,8 @@ $$('[data-section]').forEach((sec) => {
     onToggle: (st) => { if (st.isActive) setActive(navId); },
   });
 });
-ScrollTrigger.create({ trigger: '[data-hero]', start: 'top top', end: 'bottom 55%', onToggle: (st) => { if (st.isActive) setActive(null); } });
+// the hero counts as active from the very top of the page (so the phone bar's Home lights up there)
+ScrollTrigger.create({ trigger: '[data-hero]', start: 'top bottom', end: 'bottom 55%', onToggle: (st) => { if (st.isActive) setActive(null); } });
 
 /* ---------- Light / dark theme ---------- */
 const themeBtns = $$<HTMLButtonElement>('[data-theme-toggle]');
@@ -401,8 +403,23 @@ const cardTargets: Record<string, string> = {
   rag: 'projects', docker: 'skills', sql: 'skills', react: 'skills', django: 'skills', mcp: 'experience',
 };
 let hoveredCard: string | null = null;
+// Touch screens have no hover: the first tap flips a card to its back, a second tap opens its section
+let pinnedCard: string | null = null;
+let pinT = 0;
+function pin(id: string | null) {
+  pinnedCard = id;
+  world?.pinCard(id);
+  clearTimeout(pinT);
+  if (id) pinT = window.setTimeout(() => pin(null), 6000); // flips back by itself after a while
+}
 $('[data-hero]')?.addEventListener('click', (e) => {
   if ((e.target as HTMLElement).closest('a, button, .hero__title, .hero__left, .hero__right')) return;
+  if (!finePointer) {
+    const id = world?.cardAt(e.clientX, e.clientY) ?? null;
+    if (id && id === pinnedCard) { pin(null); if (cardTargets[id]) goTo(cardTargets[id]); }
+    else pin(id); // tapping empty space flips the open card back
+    return;
+  }
   if (hoveredCard && cardTargets[hoveredCard]) goTo(cardTargets[hoveredCard]);
 });
 
@@ -538,6 +555,45 @@ function packetStorm() {
     gsap.fromTo(d, { x: fromLeft ? -20 : window.innerWidth + 20, y, scale: 0.5 + Math.random() },
       { x: fromLeft ? window.innerWidth + 20 : -20, y: y + (Math.random() - 0.5) * 300, duration: 0.9 + Math.random() * 0.9, delay: Math.random() * 0.6, ease: 'power2.inOut', onComplete: () => d.remove() });
   }
+}
+
+/* ---------- Education (phones): sideways row — drag with a mouse, dots show/move the position ---------- */
+const eduRow = $<HTMLElement>('[data-edu]');
+const eduDots = $$<HTMLButtonElement>('[data-edu-dots] button');
+if (eduRow && eduDots.length) {
+  const items = [...eduRow.children] as HTMLElement[];
+  const syncDots = () => {
+    const mid = eduRow.scrollLeft + eduRow.clientWidth / 2;
+    let best = 0;
+    items.forEach((it, i) => { if (Math.abs(it.offsetLeft + it.offsetWidth / 2 - mid) < Math.abs(items[best].offsetLeft + items[best].offsetWidth / 2 - mid)) best = i; });
+    eduDots.forEach((d, i) => d.classList.toggle('is-on', i === best));
+  };
+  eduRow.addEventListener('scroll', syncDots, { passive: true });
+  syncDots();
+  eduDots.forEach((d, i) => d.addEventListener('click', () => {
+    const it = items[i];
+    eduRow.scrollTo({ left: it.offsetLeft - (eduRow.clientWidth - it.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' });
+  }));
+  // mouse drag (touch already swipes natively)
+  let sx = 0, sl = 0, down = false, moved = false;
+  eduRow.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || eduRow.scrollWidth <= eduRow.clientWidth) return;
+    down = true; moved = false; sx = e.clientX; sl = eduRow.scrollLeft;
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!down) return;
+    if (!moved && Math.abs(e.clientX - sx) > 4) { moved = true; eduRow.classList.add('is-dragging'); }
+    if (moved) eduRow.scrollLeft = sl - (e.clientX - sx);
+  });
+  window.addEventListener('pointerup', () => {
+    if (!down) return;
+    down = false;
+    if (!moved) return;
+    eduRow.classList.remove('is-dragging');
+    // settle on the nearest card
+    syncDots();
+    eduDots.find((d) => d.classList.contains('is-on'))?.click();
+  });
 }
 
 /* ---------- Skills: bento tiles ---------- */

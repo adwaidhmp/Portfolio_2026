@@ -2,16 +2,17 @@
 import { contact, profile, openRoles } from '../data/portfolio';
 const words = contact.heading.split(' ');
 ---
-<section id="contact" class="section section--dark contact" aria-labelledby="contact-title" data-section data-opaque>
+<section id="contact" class="section contact" aria-labelledby="contact-title" data-section>
   <span class="xh spin" style="left:var(--gutter);top:40px"></span>
   <span class="xh spin" style="right:var(--gutter);top:40px"></span>
   <div class="container-x">
-    <div class="shead__meta t-micro" data-reveal>
+    <div class="shead__meta t-micro">
       <span class="idx"><b>(06)</b> Contact</span>
       <span aria-hidden="true">06 / 06</span>
     </div>
 
-    <!-- Desktop: heading + details on the left, the form on the right (visible as soon as you land here) -->
+    <!-- Desktop: heading + details on the left, the form on the right. The details and the form have no
+         scroll-in animation on purpose: they're there the moment you arrive, even on a busy first load. -->
     <div class="contact__layout">
       <div class="contact__main">
         <div class="shead__titlewrap">
@@ -23,7 +24,7 @@ const words = contact.heading.split(' ');
           <span class="shead__accent" aria-hidden="true" data-script>say hello</span>
         </div>
 
-        <div class="contact__info" data-reveal>
+        <div class="contact__info">
           <ul class="clist">
             <li class="crow">
               <span class="crow__k t-micro">Email</span>
@@ -64,7 +65,7 @@ const words = contact.heading.split(' ');
         </div>
       </div>
 
-      <form class="cform" data-form data-endpoint={contact.formEndpoint} data-email={contact.email} data-reveal novalidate>
+      <form class="cform" data-form data-endpoint={contact.formEndpoint} data-email={contact.email} novalidate>
         <div class="field">
           <label class="t-micro" for="cf-name">Name</label>
           <input id="cf-name" name="name" type="text" autocomplete="name" required />

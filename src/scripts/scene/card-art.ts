@@ -17,6 +17,7 @@ const DARK = (bg: CardSpec['bg']) => bg === 'black' || bg === 'grey';
 
 const DISPLAY = '"Unbounded Variable", "Arial Black", sans-serif';
 const MONO = '"JetBrains Mono Variable", monospace';
+const SANS = '"Space Grotesk Variable", system-ui, sans-serif';
 
 function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -327,7 +328,7 @@ export function drawCard(spec: CardSpec, index: number, total: number, photo?: H
         const solid = i === 2;
         if (solid) { ctx.fillStyle = fg; ctx.fill(); }
         ctx.strokeStyle = fg; ctx.lineWidth = 3; ctx.stroke();
-        ctx.fillStyle = solid ? acc : fg;
+        ctx.fillStyle = solid ? bg : fg; // the highlighted layer: card colour on the solid bar (always readable)
         ctx.font = `700 18px ${DISPLAY}`;
         ctx.textBaseline = 'middle';
         spaced(ctx, t, cx, y + 28, 2, 'center');
@@ -408,5 +409,124 @@ export function drawShadow(): HTMLCanvasElement {
   rr(ctx, 40 - 1000, 40, 176, 240, 22);
   ctx.fillStyle = '#000';
   ctx.fill();
+  return cv;
+}
+
+/** Word-wrap `text` to `maxW` using the current ctx.font. */
+function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const t = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(t).width > maxW) { lines.push(line); line = word; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+export type CardAbout = { headline: string; text: string; keywords: string[]; foot: string };
+
+/** Back of a hero card (it flips on hover): "where I've used it" for tech cards, a short "about me"
+ *  with search keywords for the profile card. Same poster language as the fronts. */
+export function drawCardBack(spec: CardSpec, index: number, total: number, about?: CardAbout, touch = false): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = CARD_W;
+  cv.height = CARD_H;
+  const ctx = cv.getContext('2d')!;
+  const isProfile = spec.motif === 'profile' && !!about;
+  const key: CardSpec['bg'] = isProfile ? 'black' : spec.bg;
+  const fg = FG[key];
+  const dark = DARK(key);
+  const acc = key === 'accent' ? C.black : C.accent;
+  const soft = key === 'accent' ? 'rgba(17,17,17,0.78)' : dark ? 'rgba(255,255,255,0.78)' : 'rgba(17,17,17,0.74)';
+  const P = 36;
+  const W = CARD_W - P * 2;
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  rr(ctx, 0, 0, CARD_W, CARD_H, 40);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = BG[key];
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  // faint grid: a "spec sheet" feel
+  ctx.globalAlpha = dark ? 0.06 : 0.07;
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = 1;
+  for (let x = P; x < CARD_W; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CARD_H); ctx.stroke(); }
+  for (let y = P; y < CARD_H; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CARD_W, y); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `600 17px ${MONO}`;
+  ctx.fillStyle = acc;
+  spaced(ctx, isProfile ? 'ABOUT ME' : "WHERE I'VE USED IT", P, P + 22, 1.5);
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.6;
+  ctx.fillText(`${pad(index + 1)}/${pad(total)}`, CARD_W - P - 62, P + 22);
+  ctx.globalAlpha = 1;
+
+  let y = P + 48;
+  ctx.fillStyle = fg;
+  if (isProfile) {
+    ctx.font = `800 46px ${DISPLAY}`;
+    for (const l of wrap(ctx, about!.headline.toUpperCase(), W)) { y += 50; ctx.fillText(l, P - 2, y); }
+  } else {
+    const title = spec.motif === 'py' ? spec.label.toUpperCase() : spec.big ?? spec.label.toUpperCase();
+    fitFont(ctx, title, W, 64, 900);
+    y += 62;
+    ctx.fillText(title, P - 3, y);
+  }
+  y += 24;
+  ctx.strokeStyle = fg;
+  ctx.globalAlpha = 0.25;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(P, y); ctx.lineTo(CARD_W - P, y); ctx.stroke();
+  ctx.globalAlpha = 1;
+  y += 14;
+
+  if (isProfile) {
+    ctx.font = `500 27px ${SANS}`;
+    ctx.fillStyle = soft;
+    for (const l of wrap(ctx, about!.text, W)) { y += 35; ctx.fillText(l, P, y); }
+    y += 28;
+    // keyword chips
+    ctx.font = `600 19px ${SANS}`;
+    const chH = 38;
+    let x = P;
+    for (const k of about!.keywords) {
+      const w = ctx.measureText(k).width + 28;
+      if (x + w > CARD_W - P) { x = P; y += chH + 10; }
+      rr(ctx, x, y, w, chH, chH / 2);
+      ctx.strokeStyle = 'rgba(18,160,140,0.85)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = fg;
+      ctx.fillText(k, x + 14, y + 26);
+      x += w + 8;
+    }
+    ctx.font = `600 16px ${MONO}`;
+    ctx.fillStyle = acc;
+    spaced(ctx, about!.foot.toUpperCase(), P, CARD_H - P - 6, 1.2);
+  } else {
+    for (const it of spec.back ?? []) {
+      y += 38;
+      ctx.font = `700 18px ${DISPLAY}`;
+      ctx.fillStyle = acc;
+      spaced(ctx, it.where.toUpperCase(), P, y, 1.5);
+      ctx.font = `500 30px ${SANS}`;
+      ctx.fillStyle = fg;
+      for (const l of wrap(ctx, it.what, W)) { y += 38; ctx.fillText(l, P, y); }
+      y += 12;
+    }
+    ctx.font = `600 16px ${MONO}`;
+    ctx.fillStyle = acc;
+    spaced(ctx, touch ? 'TAP AGAIN TO EXPLORE  ↗' : 'CLICK TO EXPLORE  ↗', P, CARD_H - P - 6, 1.2);
+  }
+  rr(ctx, 1.5, 1.5, CARD_W - 3, CARD_H - 3, 39);
+  ctx.strokeStyle = dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
   return cv;
 }

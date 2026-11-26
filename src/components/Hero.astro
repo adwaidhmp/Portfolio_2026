@@ -51,20 +51,35 @@ const after = aiAt >= 0 ? first.slice(aiAt + 2) : '';
         <div class="strip__track">
           {[...wheelCards, ...wheelCards].map((c) => (
             <div class="strip__card">
-              {c.motif === 'profile' && profile.photo ? (
-                <div class="fan__face c-black has-photo">
-                  <img class="fan__photo" src={profile.photo} alt="" loading="lazy" decoding="async" />
-                  <small>{c.label}</small>
-                  <b>{profile.name}</b>
-                  <small class="fan__sub">{c.sub}</small>
-                </div>
-              ) : (
-                <div class={`fan__face c-${c.bg}`}>
-                  <small>{c.label}</small>
-                  <b>{c.big ?? '✳'}</b>
-                  <small>{c.sub}</small>
-                </div>
-              )}
+              <div class="strip__flip">
+                {c.motif === 'profile' && profile.photo ? (
+                  <div class="fan__face c-black has-photo">
+                    <img class="fan__photo" src={profile.photo} alt="" loading="lazy" decoding="async" />
+                    <small>{c.label}</small>
+                    <b>{profile.name}</b>
+                    <small class="fan__sub">{c.sub}</small>
+                  </div>
+                ) : (
+                  <div class={`fan__face c-${c.bg}`}>
+                    <small>{c.label}</small>
+                    <b>{c.big ?? '✳'}</b>
+                    <small>{c.sub}</small>
+                  </div>
+                )}
+                <!-- back: flips into view on hover (the 3D strip draws the same content) -->
+                {c.motif === 'profile' ? (
+                  <div class="fan__face fan__back c-black">
+                    <small>About me</small>
+                    <b>{profile.headline}</b>
+                    <span>{profile.aboutShort}</span>
+                  </div>
+                ) : (
+                  <div class={`fan__face fan__back c-${c.bg}`}>
+                    <small>Where I've used it</small>
+                    <ul>{(c.back ?? []).map((it) => <li><em>{it.where}</em> {it.what}</li>)}</ul>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

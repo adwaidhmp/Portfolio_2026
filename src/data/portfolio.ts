@@ -28,6 +28,11 @@ export const profile = {
   lastName: 'MP',
   title: 'Software Engineer | AI & Agentic Systems | Python',
   shortTitle: 'AI Engineer',
+  /** Short "about me" on the back of the photo card and under the About portrait. */
+  headline: 'AI Software Developer',
+  aboutShort: 'I build agentic AI systems, MCP servers and LLM-powered products with Python.',
+  /** Search terms people use for this kind of role (also added to the page's search keywords). */
+  keywords: ['AI Software Developer', 'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI', 'Python Developer', 'MCP', 'RAG'],
   tagline: "I build AI agents that don't just talk — they get work done.",
   location: 'Kannur, Kerala, India',
   locality: 'Kannur',

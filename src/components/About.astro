@@ -21,7 +21,11 @@ const tone = ['stat--gold', '', '', 'stat--light'];
             <span class="about__photo-tag t-micro"><i aria-hidden="true"></i> Open to work</span>
             <span>
               <span class="about__photo-name">{profile.name}</span>
-              <span class="about__photo-role t-micro">{profile.shortTitle} · {profile.location}</span>
+              <span class="about__photo-role t-micro">{profile.headline} · {profile.location}</span>
+              <span class="about__photo-about">{profile.aboutShort}</span>
+              <span class="about__photo-keys" aria-label="Roles and skills">
+                {profile.keywords.slice(1).map((k) => <span>{k}</span>)}
+              </span>
             </span>
           </figcaption>
         </figure>

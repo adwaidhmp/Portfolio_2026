@@ -9,7 +9,8 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { wheelCards } from '../../data/cards';
-import { drawCard, drawShadow, CARD_W, CARD_H } from './card-art';
+import { drawCard, drawCardBack, drawShadow, CARD_W, CARD_H } from './card-art';
+import { profile } from '../../data/portfolio';
 
 export type WorldInput = { scrollY: number; velocity: number; mouseX: number; mouseY: number };
 export type World = {
@@ -19,6 +20,10 @@ export type World = {
   focus(sectionId: string | null): void;
   setPaused(p: boolean): void;
   pickCard(clientX: number, clientY: number): string | null;
+  /** Touch screens: which card is under a tap (doesn't change the hover state). */
+  cardAt(clientX: number, clientY: number): string | null;
+  /** Touch screens: keep this card flipped to its back (null flips it back). */
+  pinCard(id: string | null): void;
   /** Re-read the light/dark theme from <html data-theme> and recolour the scene. */
   setTheme(): void;
 };
@@ -251,6 +256,7 @@ export async function createWorld(opts: {
       document.fonts.load('900 64px "Unbounded Variable"'),
       document.fonts.load('600 20px "Unbounded Variable"'),
       document.fonts.load('500 20px "JetBrains Mono Variable"'),
+      document.fonts.load('500 26px "Space Grotesk Variable"'),
     ]);
   } catch { /* draw with fallbacks */ }
   const photo = await loadImage(opts.photo ?? '');
@@ -295,13 +301,16 @@ export async function createWorld(opts: {
   };
 
   /* ---------- Network nodes ---------- */
-  const N = mobile ? 150 : 280;
+  // a few more nodes than before, because the network now also runs past the end of the camera path
+  const N = mobile ? 172 : 320;
   const net: THREE.Vector3[] = [];
   const core: THREE.Vector3[] = [];
   const seeds: number[] = [];
   const reds: number[] = [];
   for (let i = 0; i < N; i++) {
-    const t = rand() * 1.04;
+    // t > 1 continues the network beyond the path's end, so there's still a web in front of the camera
+    // when you reach the last sections (Contact) at the bottom of the page
+    const t = rand() * 1.2;
     const c = path.getPoint(Math.min(t, 1));
     if (t > 1) c.z -= (t - 1) * 60;
     const th = rand() * Math.PI * 2;
@@ -478,27 +487,49 @@ export async function createWorld(opts: {
   const shadowTex = new THREE.CanvasTexture(drawShadow());
   const cardGeo = new THREE.PlaneGeometry(1, CARD_H / CARD_W);
   const shadowGeo = new THREE.PlaneGeometry(1.45, (CARD_H / CARD_W) * 1.3);
-  type Card = { id: string; pivot: THREE.Group; holder: THREE.Group; mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; shadow: THREE.Mesh; hover: number };
+  // Each card has a front and a back (it flips on hover). `face` turns; `hit` is an invisible, non-turning
+  // plane used for hover picking, so the hover isn't lost while the card is edge-on mid-flip.
+  type Card = {
+    id: string; pivot: THREE.Group; holder: THREE.Group; face: THREE.Group; mesh: THREE.Mesh; hit: THREE.Mesh;
+    mat: THREE.MeshBasicMaterial; backMat: THREE.MeshBasicMaterial; shadow: THREE.Mesh; hover: number; flip: number;
+  };
   const cards: Card[] = [];
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const about = { headline: profile.headline, text: profile.aboutShort, keywords: profile.keywords, foot: `${profile.locality}, India · Open to GCC` };
+  const cardTex = (cv: HTMLCanvasElement) => {
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = Math.min(8, maxAniso);
+    return t;
+  };
+  const hitMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+  const touchUI = !matchMedia('(hover: hover) and (pointer: fine)').matches; // phones: "tap again" on the backs
   wheelCards.forEach((spec, i) => {
-    const tex = new THREE.CanvasTexture(drawCard(spec, i, wheelCards.length, spec.motif === 'profile' ? photo : null));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = Math.min(8, maxAniso);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, side: THREE.DoubleSide });
+    const tex = cardTex(drawCard(spec, i, wheelCards.length, spec.motif === 'profile' ? photo : null));
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, side: THREE.FrontSide });
     const mesh = new THREE.Mesh(cardGeo, mat);
     mesh.userData.id = spec.id;
     mesh.renderOrder = 7;
+    const backMat = new THREE.MeshBasicMaterial({
+      map: cardTex(drawCardBack(spec, i, wheelCards.length, spec.motif === 'profile' ? about : undefined, touchUI)),
+      transparent: true, toneMapped: false, side: THREE.FrontSide,
+    });
+    const back = new THREE.Mesh(cardGeo, backMat);
+    back.rotation.y = Math.PI;
+    back.renderOrder = 7;
+    const face = new THREE.Group();
+    face.add(mesh, back);
+    const hit = new THREE.Mesh(cardGeo, hitMat);
     const sMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.7 });
     const shadow = new THREE.Mesh(shadowGeo, sMat);
     shadow.position.set(0.06, -0.12, -0.05);
     shadow.renderOrder = 6;
     const holder = new THREE.Group();
-    holder.add(shadow, mesh);
+    holder.add(shadow, face, hit);
     const pivot = new THREE.Group();
     pivot.add(holder);
     wheel.add(pivot);
-    cards.push({ id: spec.id, pivot, holder, mesh, mat, shadow, hover: 0 });
+    cards.push({ id: spec.id, pivot, holder, face, mesh, hit, mat, backMat, shadow, hover: 0, flip: 0 });
   });
 
   /* ---------- Layout ---------- */
@@ -636,6 +667,7 @@ export async function createWorld(opts: {
   const euler = new THREE.Euler();
   const m4 = new THREE.Matrix4();
   let hoveredCard: Card | null = null;
+  let pinnedId: string | null = null; // touch: a tapped card stays flipped
   const raycaster = new THREE.Raycaster();
 
   /** Page (document) coordinates → world position on the z = 0 plane. */
@@ -647,10 +679,18 @@ export async function createWorld(opts: {
     if (expand > 0.25) { hoveredCard = null; return null; }
     const ndc = new THREE.Vector2((clientX / L.W) * 2 - 1, -(clientY / L.Hh) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const hit = raycaster.intersectObjects(cards.map((c) => c.mesh), false)[0];
-    hoveredCard = hit ? cards.find((c) => c.mesh === hit.object) ?? null : null;
+    const hit = raycaster.intersectObjects(cards.filter((c) => c.pivot.visible).map((c) => c.hit), false)[0];
+    hoveredCard = hit ? cards.find((c) => c.hit === hit.object) ?? null : null;
     return hoveredCard?.id ?? null;
   }
+  function cardAt(clientX: number, clientY: number): string | null {
+    if (expand > 0.25) return null;
+    const ndc = new THREE.Vector2((clientX / L.W) * 2 - 1, -(clientY / L.Hh) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    const hit = raycaster.intersectObjects(cards.filter((c) => c.pivot.visible).map((c) => c.hit), false)[0];
+    return hit ? cards.find((c) => c.hit === hit.object)?.id ?? null : null;
+  }
+  function pinCard(id: string | null) { pinnedId = id; needsRender = true; }
 
   /* ---------- Frame ---------- */
   function tick(dt: number, time: number) {
@@ -700,7 +740,8 @@ export async function createWorld(opts: {
     // Cards glide right → left along a gentle arch; scrolling (either way) speeds them up,
     // hovering a card slows the strip right down so it's easy to click.
     wheelVel = damp(wheelVel, Math.min(Math.abs(input.velocity) * 3, 300), 4, dt);
-    pace = damp(pace, hoveredCard ? 0.12 : 1, 5, dt);
+    if (pinnedId && expand > 0.25) pinnedId = null; // scrolled away: let it go
+    pace = damp(pace, hoveredCard || pinnedId ? 0.12 : 1, 5, dt);
     slide += reduced ? 0 : (L.speed * pace + wheelVel) * dt;
     wheel.rotation.x = damp(wheel.rotation.x, -mouse.y * 0.04, 3, dt);
     wheel.rotation.y = damp(wheel.rotation.y, mouse.x * 0.04, 3, dt);
@@ -713,7 +754,8 @@ export async function createWorld(opts: {
       const x = ((((i * L.stepPx - slide + span / 2) % span) + span) % span) - span / 2;
       const fromEnd = Math.min(x + span / 2, span / 2 - x);
       const side = i % 2 ? 1 : -1;
-      c.hover = damp(c.hover, hoveredCard === c ? 1 : 0, 8, dt);
+      const active = hoveredCard === c || pinnedId === c.id;
+      c.hover = damp(c.hover, active ? 1 : 0, 8, dt);
       c.holder.position.set(
         x * L.wpp * (1 + fly * 0.5),
         -bend * x * x * L.wpp + fly * side * L.card * (0.8 + (i % 3) * 0.35) + c.hover * L.card * 0.08,
@@ -724,10 +766,17 @@ export async function createWorld(opts: {
         (reduced ? 0 : Math.sin(t * 0.6 + i * 1.3) * 0.1) + fly * side * 1.2,
         Math.atan(-2 * bend * x) + fly * side * 0.5, // lean with the curve
       );
-      c.mesh.scale.setScalar(1 + c.hover * 0.06);
+      // hover flips the card to its back ("where I've used it") and brings it a little closer
+      c.flip = damp(c.flip, active ? 1 : 0, reduced ? 30 : 6, dt);
+      const fe = c.flip * c.flip * (3 - 2 * c.flip);
+      c.face.rotation.y = fe * Math.PI;
+      const sc = 1 + c.hover * 0.06 + fe * (touchUI ? 0.1 : 0.24); // phones: grow less (the hero is tighter)
+      c.face.scale.setScalar(sc);
+      c.hit.scale.setScalar(sc);
       // fade at both ends of the loop (always off-screen) so the wrap-around never pops
       const o = fade * smooth(0, L.stepPx * 0.5, fromEnd);
       c.mat.opacity = o;
+      c.backMat.opacity = o;
       (c.shadow.material as THREE.MeshBasicMaterial).opacity = shadowK * o * (1 - c.hover * 0.3);
       c.pivot.visible = o > 0.01;
     });
@@ -768,6 +817,8 @@ export async function createWorld(opts: {
     tick,
     relayout,
     pickCard,
+    cardAt,
+    pinCard,
     setTheme: applyTheme,
     storm() { storm = 1; },
     focus(id) {
