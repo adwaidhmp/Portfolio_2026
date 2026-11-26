@@ -423,6 +423,8 @@ html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *
    Hero
    ========================================================================== */
 .hero {
+  /* sideways swipes move the card strip (main.ts); up/down still scrolls the page */
+  touch-action: pan-y pinch-zoom;
   position: relative; min-height: 100svh; min-height: max(100svh, 680px);
   padding: calc(var(--nav-h) + 30px) var(--gutter) clamp(72px, 11vh, 110px);
   display: grid; grid-template-rows: auto auto 1fr; overflow: clip;
@@ -915,6 +917,7 @@ html:not(.reduced) .flow__link i { animation: packet-x 5s linear infinite; anima
    Projects
    ========================================================================== */
 .projects__grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: clamp(18px, 2.5vw, 32px); perspective: 1600px; }
+.projects__dots, .skills__dots { display: none; }
 .pcard { position: relative; transform-style: preserve-3d; transition: transform .7s var(--ease-out-expo); --rx: 0deg; --ry: 0deg; }
 .pcard__tilt { position: relative; display: grid; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform .5s var(--ease-out-expo); }
 .pcard__flip { display: grid; transform-style: preserve-3d; transition: transform 1s var(--ease-out-expo); }
@@ -1361,8 +1364,27 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
   .marquee__item::after { width: 4px; height: 4px; }
   .marquee--big .marquee__item { --gap: 18px; padding-block: 14px; font-size: 1.3rem; }
 
-  /* skills */
-  .stack { gap: 10px; }
+  /* skills: swipeable pages, each one wide tile over two small ones; the last page is DevOps on its own.
+     Page starts must match pageStarts in Skills.astro (one dot per page). */
+  .stack {
+    position: relative; grid-template-columns: none; grid-template-rows: auto auto;
+    grid-auto-flow: column; grid-auto-columns: calc((100% - 10px) / 2); gap: 10px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; cursor: grab;
+    margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 10px;
+  }
+  .stack::-webkit-scrollbar { display: none; }
+  .stack.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  .tile--ai { grid-column: 1 / span 2; grid-row: 1; }
+  .tile--lang { grid-column: 1; grid-row: 2; }
+  .tile--async { grid-column: 2; grid-row: 2; }
+  .tile--backend { grid-column: 3 / span 2; grid-row: 1; }
+  .tile--realtime { grid-column: 3; grid-row: 2; }
+  .tile--tools { grid-column: 4; grid-row: 2; }
+  .tile--frontend { grid-column: 5 / span 2; grid-row: 1; }
+  .tile--also { grid-column: 5; grid-row: 2; }
+  .tile--ask { grid-column: 6; grid-row: 2; }
+  .tile--devops { grid-column: 7 / span 2; grid-row: 1 / span 2; }
+  .tile--ai, .tile--backend, .tile--frontend, .tile--devops { scroll-snap-align: start; }
   .tile { padding: 16px; gap: 12px; border-radius: 18px; }
   .tile__name { font-size: 1.02rem; }
   .tile__chips { gap: 5px; }
@@ -1406,8 +1428,16 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
   .flow__link i { top: -3px; left: 0; }
   html:not(.reduced) .flow__link i { animation-name: packet-x; }
 
-  /* projects */
-  .projects__grid { gap: 14px; }
+  /* projects: a swipeable row (same as education below) instead of stacked cards */
+  .projects__grid {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; gap: 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab;
+    margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 10px;
+  }
+  .projects__grid::-webkit-scrollbar { display: none; }
+  .projects__grid.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  /* cards in the row share one height */
+  .pcard { display: grid; scroll-snap-align: center; }
   .pcard__face { min-height: 0; padding: 20px; gap: 16px; border-radius: 20px; }
   .pcard__idx { font-size: 3.1rem; }
   .pcard__title { font-size: 1.2rem; }
@@ -1427,9 +1457,9 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
   .edu__grid::-webkit-scrollbar { display: none; }
   .edu__grid { cursor: grab; }
   .edu__grid.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
-  .edu__dots { display: flex; justify-content: center; gap: 8px; margin-top: 4px; }
-  .edu__dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 99px; background: rgb(var(--fg-rgb) / .2); transition: width .3s var(--ease-out-expo), background .3s; }
-  .edu__dots button.is-on { width: 20px; background: var(--accent); }
+  .edu__dots, .projects__dots, .skills__dots { display: flex; justify-content: center; gap: 8px; margin-top: 4px; }
+  .edu__dots button, .projects__dots button, .skills__dots button { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 99px; background: rgb(var(--fg-rgb) / .2); transition: width .3s var(--ease-out-expo), background .3s; }
+  .edu__dots button.is-on, .projects__dots button.is-on, .skills__dots button.is-on { width: 20px; background: var(--accent); }
   .badge { scroll-snap-align: center; padding: 18px; gap: 10px; }
   .badge__seal { width: 46px; height: 46px; }
   .badge h3 { font-size: .9rem; }

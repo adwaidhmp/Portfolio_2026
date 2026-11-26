@@ -7,6 +7,8 @@ import { skills } from '../data/portfolio';
 const total = skills.reduce((n, c) => n + c.skills.length, 0);
 const tone = (id: string) => (id === 'ai' ? 'tone-accent' : id === 'backend' ? 'tone-ink' : 'tone-glass');
 const pad = (n: number) => String(n).padStart(2, '0');
+// phones: the wide tile at the top of each swipe page (keep in sync with the page layout in global.css)
+const pageStarts = ['ai', 'backend', 'frontend', 'devops'];
 ---
 <section id="skills" class="section" aria-labelledby="skills-title" data-section>
   <div class="container-x">
@@ -45,6 +47,11 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <p class="tile__text">Ask my AI agent where I've used any of these in production.</p>
         <button class="btn btn--gold tile__ask" type="button" data-ask="What's his tech stack?">Ask <span class="hide-sm">the </span>agent <span class="arrow" aria-hidden="true">↗</span></button>
       </article>
+    </div>
+    <!-- phones: the tiles become swipeable pages (one wide tile over two small ones; placement in CSS).
+         One dot per page; each page starts at one of these wide tiles. -->
+    <div class="skills__dots" data-stack-dots aria-hidden="true">
+      {pageStarts.map((id) => <button type="button" tabindex="-1" data-start={id}></button>)}
     </div>
   </div>
 </section>

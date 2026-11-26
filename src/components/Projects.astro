@@ -6,7 +6,7 @@ import { projects } from '../data/portfolio';
   <div class="container-x">
     <SectionHeader index="04" label="Projects" title="Selected work" script="things I shipped" id="projects-title" />
 
-    <div class="projects__grid">
+    <div class="projects__grid" data-projects>
       {projects.map((p, i) => {
         const tone = p.accent ?? 'dark';
         const idx = String(i + 1).padStart(2, '0');
@@ -66,6 +66,10 @@ import { projects } from '../data/portfolio';
           </article>
         );
       })}
+    </div>
+    <!-- phones: the cards are a sideways row (like Education); dots show where you are (and can be tapped) -->
+    <div class="projects__dots" data-projects-dots aria-hidden="true">
+      {projects.map((_, i) => <button type="button" tabindex="-1" data-i={i}></button>)}
     </div>
   </div>
 </section>

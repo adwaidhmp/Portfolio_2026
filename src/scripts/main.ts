@@ -413,12 +413,45 @@ function pin(id: string | null) {
   clearTimeout(pinT);
   if (id) pinT = window.setTimeout(() => pin(null), 6000); // flips back by itself after a while
 }
-$('[data-hero]')?.addEventListener('pointerdown', (e) => {
-  if (e.pointerType !== 'touch') return;
+const heroEl = $<HTMLElement>('[data-hero]');
+// Swiping sideways on the hero moves the card strip (the hero is `touch-action: pan-y`, so up/down still
+// scrolls the page); a flick keeps it gliding. Swiping lets go of a flipped card.
+let swipe: { x: number; y: number; lx: number; lt: number; v: number; on: boolean } | null = null;
+heroEl?.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch' || !e.isPrimary) return;
+  swipe = { x: e.clientX, y: e.clientY, lx: e.clientX, lt: e.timeStamp, v: 0, on: false };
   if ((e.target as HTMLElement).closest('a, button, input, textarea')) return;
   const id = world?.cardAt(e.clientX, e.clientY) ?? null;
   pin(id && id === pinnedCard ? null : id);
 }, { passive: true });
+heroEl?.addEventListener('pointermove', (e) => {
+  if (!swipe || e.pointerType !== 'touch' || !e.isPrimary) return;
+  if (!swipe.on) {
+    const ax = Math.abs(e.clientX - swipe.x), ay = Math.abs(e.clientY - swipe.y);
+    if (ax < 8 || ax < ay) return;
+    swipe.on = true;
+    pin(null);
+  }
+  const dx = e.clientX - swipe.lx, dt = Math.max(1, e.timeStamp - swipe.lt);
+  swipe.v = swipe.v * 0.6 + (dx / dt) * 1000 * 0.4; // px/s, smoothed
+  swipe.lx = e.clientX; swipe.lt = e.timeStamp;
+  world?.dragStrip(dx);
+}, { passive: true });
+const endSwipe = (e: PointerEvent) => {
+  if (!swipe || e.pointerType !== 'touch' || !e.isPrimary) return;
+  if (swipe.on) world?.flingStrip(e.timeStamp - swipe.lt > 80 ? 0 : swipe.v); // finger rested before lifting: no glide
+  swipe = null;
+};
+heroEl?.addEventListener('pointerup', endSwipe);
+heroEl?.addEventListener('pointercancel', endSwipe);
+// Big screens: shift + wheel (or a sideways trackpad swipe) over the hero scrolls the card strip
+heroEl?.addEventListener('wheel', (e) => {
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0;
+  if (!d) return;
+  e.preventDefault();
+  e.stopPropagation(); // keep it from Lenis (it would scroll the page)
+  world?.pushStrip(d * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerWidth : 1));
+}, { passive: false });
 
 /* ---------- Project cards: tilt + flip ---------- */
 $$('[data-pcard]').forEach((card) => {
@@ -554,44 +587,56 @@ function packetStorm() {
   }
 }
 
-/* ---------- Education (phones): sideways row — drag with a mouse, dots show/move the position ---------- */
-const eduRow = $<HTMLElement>('[data-edu]');
-const eduDots = $$<HTMLButtonElement>('[data-edu-dots] button');
-if (eduRow && eduDots.length) {
-  const items = [...eduRow.children] as HTMLElement[];
+/* ---------- Sideways rows on phones (Skills, Education, Projects): drag with a mouse, dots show/move the position ---------- */
+// `pages`: the element each dot stands for (default: every child of the row)
+function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], pages?: HTMLElement[]) {
+  if (!row || !dots.length) return;
+  const items = pages ?? ([...row.children] as HTMLElement[]);
   const syncDots = () => {
-    const mid = eduRow.scrollLeft + eduRow.clientWidth / 2;
+    const mid = row.scrollLeft + row.clientWidth / 2;
     let best = 0;
     items.forEach((it, i) => { if (Math.abs(it.offsetLeft + it.offsetWidth / 2 - mid) < Math.abs(items[best].offsetLeft + items[best].offsetWidth / 2 - mid)) best = i; });
-    eduDots.forEach((d, i) => d.classList.toggle('is-on', i === best));
+    dots.forEach((d, i) => d.classList.toggle('is-on', i === best));
   };
-  eduRow.addEventListener('scroll', syncDots, { passive: true });
+  row.addEventListener('scroll', syncDots, { passive: true });
   syncDots();
-  eduDots.forEach((d, i) => d.addEventListener('click', () => {
+  dots.forEach((d, i) => d.addEventListener('click', () => {
     const it = items[i];
-    eduRow.scrollTo({ left: it.offsetLeft - (eduRow.clientWidth - it.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' });
+    row.scrollTo({ left: it.offsetLeft - (row.clientWidth - it.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' });
   }));
   // mouse drag (touch already swipes natively)
   let sx = 0, sl = 0, down = false, moved = false;
-  eduRow.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'mouse' || eduRow.scrollWidth <= eduRow.clientWidth) return;
-    down = true; moved = false; sx = e.clientX; sl = eduRow.scrollLeft;
+  row.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || row.scrollWidth <= row.clientWidth) return;
+    down = true; moved = false; sx = e.clientX; sl = row.scrollLeft;
   });
   window.addEventListener('pointermove', (e) => {
     if (!down) return;
-    if (!moved && Math.abs(e.clientX - sx) > 4) { moved = true; eduRow.classList.add('is-dragging'); }
-    if (moved) eduRow.scrollLeft = sl - (e.clientX - sx);
+    if (!moved && Math.abs(e.clientX - sx) > 4) { moved = true; row.classList.add('is-dragging'); }
+    if (moved) row.scrollLeft = sl - (e.clientX - sx);
   });
   window.addEventListener('pointerup', () => {
     if (!down) return;
     down = false;
     if (!moved) return;
-    eduRow.classList.remove('is-dragging');
+    row.classList.remove('is-dragging');
+    // a drag that ends on a button or link shouldn't also press it (the click follows this pointerup straight away)
+    const swallow = (e: Event) => { e.preventDefault(); e.stopPropagation(); };
+    row.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => row.removeEventListener('click', swallow, { capture: true }), 0);
     // settle on the nearest card
     syncDots();
-    eduDots.find((d) => d.classList.contains('is-on'))?.click();
+    dots.find((d) => d.classList.contains('is-on'))?.click();
   });
 }
+{
+  const stack = $<HTMLElement>('[data-stack]');
+  const dots = $$<HTMLButtonElement>('[data-stack-dots] button');
+  const starts = dots.map((d) => $<HTMLElement>(`.tile--${d.dataset.start}`, stack ?? undefined)).filter((el): el is HTMLElement => !!el);
+  if (starts.length === dots.length) swipeRow(stack, dots, starts);
+}
+swipeRow($<HTMLElement>('[data-edu]'), $$<HTMLButtonElement>('[data-edu-dots] button'));
+swipeRow($<HTMLElement>('[data-projects]'), $$<HTMLButtonElement>('[data-projects-dots] button'));
 
 /* ---------- Skills: bento tiles ---------- */
 // a soft spotlight follows the pointer inside each tile

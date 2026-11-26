@@ -24,6 +24,12 @@ export type World = {
   cardAt(clientX: number, clientY: number): string | null;
   /** Touch screens: keep this card flipped to its back (null flips it back). */
   pinCard(id: string | null): void;
+  /** A finger is dragging the card strip: follow it by dx px (positive = cards move right). */
+  dragStrip(dx: number): void;
+  /** The finger let go: keep gliding at vx px/s (same direction as dragStrip) and slow down. */
+  flingStrip(vx: number): void;
+  /** Wheel / trackpad: scroll the strip by d px, eased in (positive = cards move left, like scrollLeft). */
+  pushStrip(d: number): void;
   /** Re-read the light/dark theme from <html data-theme> and recolour the scene. */
   setTheme(): void;
 };
@@ -692,6 +698,14 @@ export async function createWorld(opts: {
   }
   function pinCard(id: string | null) { pinnedId = id; needsRender = true; }
 
+  // Scrolling the strip by hand (finger drag, fling, shift + wheel)
+  let dragging = false; // a finger is on the strip: the automatic glide waits
+  let glide = 0; // px/s left over from a fling; dies down
+  let wheelLeft = 0; // wheel distance not applied yet (px); eased in over a few frames
+  function dragStrip(dx: number) { dragging = true; glide = 0; slide -= dx; needsRender = true; }
+  function flingStrip(vx: number) { dragging = false; glide = Math.max(-4000, Math.min(4000, -vx)); needsRender = true; }
+  function pushStrip(d: number) { wheelLeft += d; needsRender = true; }
+
   /* ---------- Frame ---------- */
   function tick(dt: number, time: number) {
     if (paused && !needsRender) return;
@@ -741,8 +755,11 @@ export async function createWorld(opts: {
     // hovering (or, on phones, tapping) a card slows the strip right down so it's easy to read.
     wheelVel = damp(wheelVel, Math.min(Math.abs(input.velocity) * 3, 300), 4, dt);
     if (pinnedId && expand > 0.25) pinnedId = null; // scrolled away: let it go
-    pace = damp(pace, hoveredCard || pinnedId ? 0.12 : 1, 5, dt);
-    slide += reduced ? 0 : (L.speed * pace + wheelVel) * dt;
+    pace = damp(pace, dragging ? 0 : hoveredCard || pinnedId ? 0.12 : 1, 5, dt);
+    const wheelStep = wheelLeft * Math.min(1, dt * 12);
+    wheelLeft -= wheelStep;
+    glide = damp(glide, 0, 2.5, dt);
+    slide += (reduced ? 0 : (L.speed * pace + wheelVel) * dt) + glide * dt + wheelStep;
     wheel.rotation.x = damp(wheel.rotation.x, -mouse.y * 0.04, 3, dt);
     wheel.rotation.y = damp(wheel.rotation.y, mouse.x * 0.04, 3, dt);
     const fly = smooth(0.0, 0.75, expand);
@@ -819,6 +836,9 @@ export async function createWorld(opts: {
     pickCard,
     cardAt,
     pinCard,
+    dragStrip,
+    flingStrip,
+    pushStrip,
     setTheme: applyTheme,
     storm() { storm = 1; },
     focus(id) {
