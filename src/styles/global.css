@@ -1243,6 +1243,26 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
 .agent__draft-send { border: 0; background: var(--accent); color: var(--on-accent); }
 .agent__draft-send:hover { transform: translateY(-1px); }
 .agent__draft-send:disabled { opacity: .6; transform: none; }
+/* "Send with" menu (compose.ts): Gmail / Outlook / email app / copy, for every email action */
+.compose {
+  position: fixed; z-index: 400; min-width: 230px; padding: 8px; border-radius: 16px;
+  background: var(--surface); color: var(--fg); border: 1px solid rgb(var(--fg-rgb) / .12);
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / calc(.3 + .4 * var(--sh)));
+  font-family: var(--font-sans); opacity: 0; transform: translateY(6px) scale(.98);
+  transition: opacity .2s, transform .3s var(--ease-out-expo);
+}
+.compose[data-side="above"] { transform: translateY(-6px) scale(.98); }
+.compose.is-on { opacity: 1; transform: none; }
+.compose__title { margin: 4px 8px 6px; font-family: var(--font-mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+.compose__opt {
+  display: grid; grid-template-columns: 28px 1fr; align-items: center; column-gap: 10px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--fg);
+  font: inherit; font-size: .92rem; text-align: left; text-decoration: none; cursor: pointer;
+}
+.compose__opt:hover, .compose__opt:focus-visible { background: rgb(var(--accent-rgb) / .12); outline: none; }
+.compose__ico { grid-row: span 2; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: rgb(var(--accent-rgb) / .14); color: var(--accent-ink); }
+.compose__hint { grid-column: 2; font-size: .72rem; color: var(--fg-3); }
+
 @media (max-width: 600px) {
   .agent__draft { left: 8px; right: 8px; bottom: 8px; padding: 12px; gap: 8px; max-height: calc(100% - 62px); }
   .agent__draft-icon { width: 30px; height: 30px; }

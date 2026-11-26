@@ -1,6 +1,7 @@
 /* "Ask my AI agent" — a terminal-style chat that answers only from the
    portfolio data, using keyword matching. No API keys, so it never breaks. */
 import { profile, about, skills, experience, projects, education, contact, openRoles, workPrefs } from '../data/portfolio';
+import { openCompose } from './compose';
 
 type Seg = { text: string; href?: string };
 type Answer = { tool: string; result: string; segs: Seg[]; section?: string; sectionLabel?: string; id?: string };
@@ -548,12 +549,18 @@ export function initAgentChat(deps: {
         if (sendBtn) sendBtn.disabled = false;
       }
     } else {
-      // static site without a form service: open the visitor's email app with everything filled in
-      draftSent = true;
-      say('Opening your email app with the message ready…', 'is-ok');
-      const href = `mailto:${draft.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message + sign)}`;
-      setTimeout(() => { window.location.href = href; closeDraft(); }, deps.reduced ? 0 : 600);
-      agentSays('Your email app should open with the message ready — just hit send.');
+      // no form service set up: let the visitor pick Gmail / Outlook / their email app, all prefilled
+      say('Ready — choose how to send it:', 'is-ok');
+      openCompose(sendBtn ?? draft, { to: draft.dataset.email ?? '', subject, body: message + sign }, {
+        copy: 'message',
+        onPick: (how) => {
+          draftSent = true;
+          closeDraft();
+          agentSays(how === 'copy'
+            ? `Copied! Paste it into an email to ${draft.dataset.email} and it's on its way.`
+            : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready — just hit send.`);
+        },
+      });
     }
   });
 
@@ -615,7 +622,7 @@ export function initAgentChat(deps: {
   // clicking or tapping anywhere outside the chat closes it (focus stays where the visitor clicked)
   document.addEventListener('pointerdown', (e) => {
     if (panel.dataset.open !== 'true') return;
-    if ((e.target as Element | null)?.closest?.('[data-agent], [data-agent-open], [data-agent-hint], [data-ask]')) return;
+    if ((e.target as Element | null)?.closest?.('[data-agent], [data-agent-open], [data-agent-hint], [data-ask], .compose')) return;
     shut(false);
   });
   panel.addEventListener('keydown', (e) => {

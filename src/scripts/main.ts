@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { initAgentChat } from './agent';
+import { initComposeLinks, openCompose } from './compose';
 import type { World, WorldInput } from './scene/world';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -444,7 +445,8 @@ $$<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', 
   setTimeout(() => { b.classList.remove('is-copied'); b.setAttribute('aria-label', 'Copy email address'); }, 1800);
 }));
 
-/* ---------- Contact form ---------- */
+/* ---------- Email links + contact form ---------- */
+initComposeLinks(); // every mailto: link (Email me, the address, agent answers) opens the "Send with" menu
 const form = $<HTMLFormElement>('[data-form]');
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -480,10 +482,17 @@ form?.addEventListener('submit', async (e) => {
       status.textContent = `Couldn't send right now. Please email ${form.dataset.email} directly.`;
     }
   } else {
-    const subject = encodeURIComponent(`Portfolio enquiry from ${name}`);
-    const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
-    status.textContent = 'Opening your email app with the message ready to send…';
-    setTimeout(() => { window.location.href = `mailto:${form.dataset.email}?subject=${subject}&body=${body}`; }, reduced ? 0 : 700);
+    // no form service set up: let the visitor pick Gmail / Outlook / their email app, all prefilled
+    // (a bare mailto: often does nothing when the computer has no default email app)
+    status.textContent = 'Your message is ready. Choose how to send it:';
+    openCompose(btn, { to: form.dataset.email ?? '', subject: `Portfolio enquiry from ${name}`, body: `${message}\n\n— ${name} (${email})` }, {
+      copy: 'message',
+      onPick: (how) => {
+        status.textContent = how === 'copy'
+          ? `Message copied — paste it into an email to ${form.dataset.email}.`
+          : `Opened ${how === 'gmail' ? 'Gmail' : how === 'outlook' ? 'Outlook' : 'your email app'} with your message ready — just hit send.`;
+      },
+    });
   }
 });
 
