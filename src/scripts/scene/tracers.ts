@@ -4,14 +4,13 @@
    1px line that fades after a few seconds; now and then one stops to mark a
    small square (a task done) and moves on.
 
-   - Blast: from the grid point behind the hero card strip, lines branch out
-     along the same grid, like a circuit being routed: every branch moves at
-     the same pace (so the front grows as a diamond), splits off side branches
-     and stops where it would cross another one, sometimes with a small pad at
-     its end. Some branch ends carry on as the walking agents. It fires on
-     load and again when the cards fly off on scroll.
-   - Walking agents keep away from each other, so they cover the whole screen,
-     and near the cursor they tend to turn toward it.
+   - They start spread over the screen, one after another, and keep away from
+     each other, so they cover the whole screen; near the cursor they tend to
+     turn toward it.
+   - Spread: the whole background can be gathered into one point (at the top
+     of the page, the point under the hero cards). As `spread` goes 0 → 1 the
+     lines flow out of that point to their places, each line a little after
+     the last; going back 1 → 0 they all flow back into it.
    - The grid scrolls with the page (with parallax); agents that leave the
      screen come back in from an edge.
    ========================================================================== */
@@ -23,21 +22,21 @@ export type Tracers = {
   /** Add to the main scene; it draws first, in screen space. */
   mesh: THREE.Mesh;
   resize(cssW: number, cssH: number): void;
-  /** Blast from (x, y) css px; the walking agents come out of it. */
-  start(x: number, y: number): void;
-  /** Blast from (x, y) css px with up to n branches. */
-  blast(x: number, y: number, n: number): void;
-  update(dt: number, i: { scrollY: number; cursorX: number; cursorY: number; cursor: boolean }): void;
+  /** The agents appear, spread over the screen. */
+  start(): void;
+  /** spread: 0 = every line gathered at (cx, cy), css px → 1 = every line in its place. */
+  update(dt: number, i: { scrollY: number; cursorX: number; cursorY: number; cursor: boolean; spread: number; cx: number; cy: number }): void;
   /** Run `seconds` of motion at once and keep that frame (reduced motion). */
   settle(seconds: number): void;
   setLook(l: TracerLook): void;
 };
 
-// Alpha = (1 − age / life)²; colour and strength by kind.
+// Alpha = (1 − age / life)² × how far the line has come out of the gathering point; colour and strength by kind.
 const VS = /* glsl */ `
   attribute float aT;
   attribute float aLife;
   attribute float aKind;
+  attribute float aShow;
   uniform vec2 uView;
   uniform float uTime;
   varying float vA;
@@ -45,7 +44,7 @@ const VS = /* glsl */ `
   void main() {
     gl_Position = vec4(position.x / uView.x * 2.0 - 1.0, 1.0 - position.y / uView.y * 2.0, 0.0, 1.0);
     float k = clamp(1.0 - (uTime - aT) / aLife, 0.0, 1.0);
-    vA = k * k;
+    vA = k * k * aShow;
     vKind = aKind;
   }
 `;
@@ -68,24 +67,27 @@ const rgb = (hex: string) => {
   const n = parseInt(hex.replace('#', ''), 16);
   return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
 };
+const smooth = (a: number, b: number, v: number) => {
+  const t = Math.min(1, Math.max(0, (v - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 // right, down, left, up (screen y points down)
 const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]] as const;
 const INK = 0, TEAL = 1, HEAD = 2;
 
 type Pt = { x: number; y: number; t: number }; // grid units, time it was laid down
-type Mark = Pt & { life: number };
-type Line = { pts: Pt[]; teal: boolean; life: number };
+type Mark = Pt & { life: number; seed: number };
+/** seed: when this line comes out of the gathering point (0 first → 1 last). */
+type Line = { pts: Pt[]; teal: boolean; life: number; seed: number };
 type Agent = { gx: number; gy: number; d: number; p: number; speed: number; line: Line; wait: number; cool: number };
-/** One blast: its clock, the grid points its lines have taken, and how many branches it may still grow. */
-type Blast = { t0: number; taken: Set<string>; left: number; seed: boolean; branches: number };
-type Branch = { gx: number; gy: number; d: number; p: number; line: Line; blast: Blast; gen: number; run: number; split: number; side: number };
+/** An extra trail that only shows while the lines flow out of (or back into) the gathering point. d = cells along it. */
+type Ghost = { pts: { x: number; y: number; d: number }[]; teal: boolean; seed: number; len: number; mark: boolean };
 
 export function createTracers(o: { mobile: boolean; seed: () => number }): Tracers {
   const rand = o.seed;
   const CELL = o.mobile ? 36 : 44; // css px
-  const LIFE = 6.5; // seconds a walker's line stays visible
-  const BLAST_LIFE = 4; // blast lines clear a little sooner
+  const LIFE = 6.5; // seconds a line stays visible
   const PARALLAX = 0.35;
   const SPEED = o.mobile ? 1.6 : 1.9; // walking speed, cells per second
 
@@ -95,12 +97,14 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
   const born = new Float32Array(MAX_Q * 6);
   const life = new Float32Array(MAX_Q * 6);
   const kind = new Float32Array(MAX_Q * 6);
+  const show = new Float32Array(MAX_Q * 6);
   const geo = new THREE.BufferGeometry();
   const attrs = [
     ['position', new THREE.BufferAttribute(pos, 2)],
     ['aT', new THREE.BufferAttribute(born, 1)],
     ['aLife', new THREE.BufferAttribute(life, 1)],
     ['aKind', new THREE.BufferAttribute(kind, 1)],
+    ['aShow', new THREE.BufferAttribute(show, 1)],
   ] as const;
   for (const [name, a] of attrs) geo.setAttribute(name, a.setUsage(THREE.DynamicDrawUsage));
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6); // drawn in screen space
@@ -121,9 +125,10 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
   const lines: Line[] = [];
   const marks: Mark[] = [];
   const agents: Agent[] = [];
-  const branches: Branch[] = [];
   let W = 1, H = 1, ox = 0, oy = 0, scroll = 0, now = 0;
-  let wanted = 0; // walking agents to keep on screen
+  let spread = 1, px0 = 0, py0 = 0; // how far out of the gathering point, and the point (css px)
+  let ghosts: Ghost[] = [];
+  let ghostsSeen = false; // shown since they were laid out (they are laid out afresh each time all is gathered)
   const sx = (gx: number) => gx * CELL + ox;
   const sy = (gy: number) => gy * CELL + oy;
   const offScreen = (gx: number, gy: number, m: number) => sx(gx) < -m || sx(gx) > W + m || sy(gy) < -m || sy(gy) > H + m;
@@ -132,7 +137,7 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
     oy = Math.round((H % CELL) / 2 - scroll * PARALLAX);
   }
   function line(gx: number, gy: number, teal: boolean, lf: number): Line {
-    const l: Line = { pts: [{ x: gx, y: gy, t: now }], teal, life: lf };
+    const l: Line = { pts: [{ x: gx, y: gy, t: now }], teal, life: lf, seed: rand() };
     lines.push(l);
     return l;
   }
@@ -155,7 +160,6 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
     a.p = 0;
     a.line = line(a.gx, a.gy, a.line.teal, LIFE);
   }
-  const distToAgents = (gx: number, gy: number) => agents.reduce((m, b) => Math.min(m, Math.abs(b.gx - gx) + Math.abs(b.gy - gy)), Infinity);
 
   const cur = { x: 0, y: 0, on: false };
   function pickDir(a: Agent) {
@@ -190,7 +194,7 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
   function arrive(a: Agent, t: number) {
     if (offScreen(a.gx, a.gy, CELL * 2)) { a.line.pts.push({ x: a.gx, y: a.gy, t }); reenter(a); return; }
     if (a.cool <= 0 && !offScreen(a.gx, a.gy, -CELL) && rand() < 0.14) {
-      marks.push({ x: a.gx, y: a.gy, t, life: LIFE });
+      marks.push({ x: a.gx, y: a.gy, t, life: LIFE, seed: a.line.seed });
       a.line.pts.push({ x: a.gx, y: a.gy, t });
       a.wait = 0.9;
       a.cool = 5 + rand() * 7;
@@ -218,65 +222,9 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
     }
   }
 
-  /* ---------- Blast: branches routed out along the grid ---------- */
-  const key = (gx: number, gy: number) => `${gx},${gy}`;
-  /** Every branch of a blast shares one pace: quick at first, easing toward a walk. */
-  const blastSpeed = (b: Blast) => SPEED * 1.6 + (o.mobile ? 9 : 12) * Math.exp(-(now - b.t0) * 0.9);
-  function branch(b: Blast, gx: number, gy: number, d: number, gen: number) {
-    if (b.left <= 0) return;
-    b.left--;
-    b.branches++;
-    // the four main arms run to the screen edge; side branches are shorter each generation
-    const run = gen === 0 ? Infinity : Math.round([0, 12, 8, 5][gen] * (0.4 + rand() * 0.6)) + 2;
-    branches.push({
-      gx, gy, d, p: 0, blast: b, gen, run,
-      split: gen === 0 ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 3),
-      side: rand() < 0.5 ? 1 : 3,
-      line: line(gx, gy, rand() < 0.3, BLAST_LIFE),
-    });
-  }
-  function blast(x: number, y: number, n: number, seed = false) {
-    const gx = Math.round((x - ox) / CELL), gy = Math.round((y - oy) / CELL);
-    const b: Blast = { t0: now, taken: new Set([key(gx, gy)]), left: n, seed, branches: 0 };
-    for (let d = 0; d < 4; d++) branch(b, gx, gy, d, 0);
-  }
-  /** A branch stops: sometimes a small pad, sometimes it carries on as a walking agent. */
-  function end(r: Branch, t: number) {
-    r.line.pts.push({ x: r.gx, y: r.gy, t });
-    const onScreen = !offScreen(r.gx, r.gy, -CELL);
-    if (onScreen && r.blast.seed && agents.length < wanted && distToAgents(r.gx, r.gy) > 4) {
-      spawn(r.gx, r.gy, r.d, r.line.teal);
-    } else if (onScreen && rand() < 0.4) {
-      marks.push({ x: r.gx, y: r.gy, t, life: BLAST_LIFE });
-    }
-  }
-  /** Moves one branch; false once it has stopped. */
-  function grow(r: Branch, dt: number): boolean {
-    const spd = blastSpeed(r.blast);
-    r.p += spd * dt;
-    while (r.p >= 1) {
-      const [dx, dy] = DIRS[r.d];
-      const nx = r.gx + dx, ny = r.gy + dy;
-      const t = now - (r.p - 1) / spd;
-      // never cross another line of this blast, and stop at the edge of the screen
-      if (r.blast.taken.has(key(nx, ny)) || r.run <= 0 || offScreen(nx, ny, CELL)) { end(r, t); return false; }
-      r.blast.taken.add(key(nx, ny));
-      r.p -= 1;
-      r.gx = nx; r.gy = ny;
-      r.run--;
-      if (--r.split <= 0 && r.gen < 3) {
-        // a side branch, alternating sides on the main arms
-        r.side = r.gen === 0 ? (r.side === 1 ? 3 : 1) : rand() < 0.5 ? 1 : 3;
-        branch(r.blast, r.gx, r.gy, (r.d + r.side) % 4, r.gen + 1);
-        r.split = r.gen === 0 ? 1 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 3);
-      }
-    }
-    return true;
-  }
-
   /* ---------- Build the quads ---------- */
   let q = 0;
-  function quad(ax: number, ay: number, at: number, bx: number, by: number, bt: number, k: number, hw: number, lf: number) {
+  function quad(ax: number, ay: number, at: number, bx: number, by: number, bt: number, k: number, hw: number, lf: number, sh: number) {
     if (q >= MAX_Q) return;
     let dx = bx - ax, dy = by - ay;
     const len = Math.hypot(dx, dy);
@@ -292,15 +240,52 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
       born[j] = v[i * 3 + 2];
       life[j] = lf;
       kind[j] = k;
+      show[j] = sh;
     }
     q++;
+  }
+
+  /**
+   * The extra trails, so plenty pours out of the gathering point: short grid walks laid over the
+   * screen (and a little below it, as the grid drifts up when you scroll), drawn like the walkers' trails.
+   */
+  function makeGhosts() {
+    ghosts = [];
+    const n = o.mobile ? 34 : 72;
+    const top = -H * 0.05, span = H * 1.3;
+    const cols = Math.max(1, Math.round(Math.sqrt((n * W) / span)));
+    const rows = Math.ceil(n / cols);
+    for (let i = 0; i < n; i++) {
+      const c = i % cols, r = Math.floor(i / cols);
+      const x = ((c + 0.1 + rand() * 0.8) / cols) * W;
+      const y = top + ((r + 0.1 + rand() * 0.8) / rows) * span;
+      let gx = Math.round((x - ox) / CELL), gy = Math.round((y - oy) / CELL);
+      let d = Math.floor(rand() * 4);
+      const steps = 4 + Math.floor(rand() * 9);
+      const pts = [{ x: gx, y: gy, d: 0 }];
+      for (let s = 1; s <= steps; s++) {
+        if (s > 1 && rand() < 0.22) { // turn here
+          pts.push({ x: gx, y: gy, d: s - 1 });
+          d = (d + (rand() < 0.5 ? 1 : 3)) % 4;
+        }
+        gx += DIRS[d][0]; gy += DIRS[d][1];
+      }
+      pts.push({ x: gx, y: gy, d: steps });
+      ghosts.push({ pts, teal: rand() < 0.33, seed: rand(), len: steps, mark: rand() < 0.25 });
+    }
+  }
+
+  /** How far out of the gathering point a line with this seed is: 0 gathered → 1 in its place. */
+  function out(seed: number) {
+    if (spread >= 1) return 1;
+    const t = Math.min(1, Math.max(0, spread * 1.4 - seed * 0.4));
+    return t * t * (3 - 2 * t);
   }
 
   function build() {
     q = 0;
     const heads = new Map<Line, Pt>();
     for (const a of agents) heads.set(a.line, { x: a.gx + DIRS[a.d][0] * a.p, y: a.gy + DIRS[a.d][1] * a.p, t: now });
-    for (const r of branches) heads.set(r.line, { x: r.gx + DIRS[r.d][0] * r.p, y: r.gy + DIRS[r.d][1] * r.p, t: now });
     for (let li = lines.length - 1; li >= 0; li--) {
       const l = lines[li];
       const cutoff = now - l.life;
@@ -311,31 +296,64 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
       if (drop) l.pts.splice(0, drop);
       const pts = head ? [...l.pts, head] : l.pts;
       if (!head && (pts.length < 2 || pts[pts.length - 1].t <= cutoff)) { lines.splice(li, 1); continue; }
+      // a gathered line is pulled in toward the point, and fades as it gets there
+      const f = out(l.seed), sh = smooth(0, 0.15, f);
+      if (sh <= 0.002) continue;
+      const X = (gx: number) => px0 + (sx(gx) - px0) * f;
+      const Y = (gy: number) => py0 + (sy(gy) - py0) * f;
       const k = l.teal ? TEAL : INK;
       for (let i = 0; i < pts.length - 1; i++) {
         let a = pts[i];
         const b = pts[i + 1];
         if (a.t < cutoff && b.t > a.t) { // trim the faded part, so the tail fades smoothly
-          const f = (cutoff - a.t) / (b.t - a.t);
-          a = { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, t: cutoff };
+          const fr = (cutoff - a.t) / (b.t - a.t);
+          a = { x: a.x + (b.x - a.x) * fr, y: a.y + (b.y - a.y) * fr, t: cutoff };
         }
-        quad(sx(a.x), sy(a.y), a.t, sx(b.x), sy(b.y), b.t, k, 0.5, l.life);
+        quad(X(a.x), Y(a.y), a.t, X(b.x), Y(b.y), b.t, k, 0.5, l.life, sh);
       }
     }
-    // marks: a small open square (a task done, or the pad at a branch end)
+    // the extra trails come out of the point with the rest, and melt away as they reach their places
+    for (const g of ghosts) {
+      const f = out(g.seed), sh = smooth(0, 0.15, f) * (1 - smooth(0.55, 1, f));
+      if (sh <= 0.002) continue;
+      ghostsSeen = true;
+      const X = (gx: number) => px0 + (sx(gx) - px0) * f;
+      const Y = (gy: number) => py0 + (sy(gy) - py0) * f;
+      const tAt = (d: number) => now - (g.len - d) * 0.35; // the end is fresh, the start older, like a walker's trail
+      const k = g.teal ? TEAL : INK;
+      for (let i = 0; i < g.pts.length - 1; i++) {
+        const a = g.pts[i], b = g.pts[i + 1];
+        quad(X(a.x), Y(a.y), tAt(a.d), X(b.x), Y(b.y), tAt(b.d), k, 0.5, LIFE, sh);
+      }
+      const e = g.pts[g.pts.length - 1], x = X(e.x), y = Y(e.y);
+      if (g.mark) {
+        const s = 5 * Math.max(0.3, f);
+        quad(x - s, y - s, now, x + s, y - s, now, TEAL, 0.5, LIFE, sh);
+        quad(x + s, y - s, now, x + s, y + s, now, TEAL, 0.5, LIFE, sh);
+        quad(x + s, y + s, now, x - s, y + s, now, TEAL, 0.5, LIFE, sh);
+        quad(x - s, y + s, now, x - s, y - s, now, TEAL, 0.5, LIFE, sh);
+      } else {
+        quad(x - 0.01, y, now, x + 0.01, y, now, HEAD, 2, LIFE, sh);
+      }
+    }
+    // marks: a small open square (a task done), moving with its line
     for (let i = marks.length - 1; i >= 0; i--) {
       const m = marks[i];
       if (m.t <= now - m.life) { marks.splice(i, 1); continue; }
-      const x = sx(m.x), y = sy(m.y), s = 5;
-      quad(x - s, y - s, m.t, x + s, y - s, m.t, TEAL, 0.5, m.life);
-      quad(x + s, y - s, m.t, x + s, y + s, m.t, TEAL, 0.5, m.life);
-      quad(x + s, y + s, m.t, x - s, y + s, m.t, TEAL, 0.5, m.life);
-      quad(x - s, y + s, m.t, x - s, y - s, m.t, TEAL, 0.5, m.life);
+      const f = out(m.seed), sh = smooth(0, 0.15, f);
+      if (sh <= 0.002) continue;
+      const x = px0 + (sx(m.x) - px0) * f, y = py0 + (sy(m.y) - py0) * f, s = 5 * Math.max(0.3, f);
+      quad(x - s, y - s, m.t, x + s, y - s, m.t, TEAL, 0.5, m.life, sh);
+      quad(x + s, y - s, m.t, x + s, y + s, m.t, TEAL, 0.5, m.life, sh);
+      quad(x + s, y + s, m.t, x - s, y + s, m.t, TEAL, 0.5, m.life, sh);
+      quad(x - s, y + s, m.t, x - s, y - s, m.t, TEAL, 0.5, m.life, sh);
     }
-    // heads: tiny teal squares (a little smaller on blast branches)
+    // heads: tiny teal squares, on their lines
     for (const [l, h] of heads) {
-      const x = sx(h.x), y = sy(h.y);
-      quad(x - 0.01, y, now, x + 0.01, y, now, HEAD, l.life === LIFE ? 2 : 1.5, LIFE);
+      const f = out(l.seed), sh = smooth(0, 0.15, f);
+      if (sh <= 0.002) continue;
+      const x = px0 + (sx(h.x) - px0) * f, y = py0 + (sy(h.y) - py0) * f;
+      quad(x - 0.01, y, now, x + 0.01, y, now, HEAD, 2, LIFE, sh);
     }
     for (const [, a] of attrs) {
       a.needsUpdate = true;
@@ -349,13 +367,6 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
   function step(dt: number) {
     now += dt;
     for (const a of agents) walk(a, dt);
-    for (let i = branches.length - 1; i >= 0; i--) if (!grow(branches[i], dt)) branches.splice(i, 1);
-    // once the blasts are done, any agents still missing walk in from the edges
-    if (!branches.length && agents.length < wanted) {
-      const a: Agent = { gx: 0, gy: 0, d: 0, p: 0, speed: SPEED * (0.85 + rand() * 0.3), line: { pts: [], teal: agents.length % 3 === 1, life: LIFE }, wait: 0, cool: 2 + rand() * 5 };
-      reenter(a);
-      agents.push(a);
-    }
   }
 
   return {
@@ -364,19 +375,34 @@ export function createTracers(o: { mobile: boolean; seed: () => number }): Trace
       W = w; H = h;
       place();
       mat.uniforms.uView.value.set(W, H);
+      makeGhosts();
       build();
     },
-    start(x, y) {
-      // enough walking agents to cover the screen: about one per 275 × 275 px
-      wanted = THREE.MathUtils.clamp(Math.round((W * H) / 75000), 5, 20);
-      blast(x, y, o.mobile ? 26 : 60, true);
+    start() {
+      // about one agent per 275 × 275 px, one per cell of a coarse grid so they start spread out;
+      // each waits a moment before setting off, so they don't all move in step
+      const count = THREE.MathUtils.clamp(Math.round((W * H) / 75000), 5, 20);
+      const cols = Math.max(1, Math.round(Math.sqrt((count * W) / H)));
+      const rows = Math.ceil(count / cols);
+      const m = CELL * 1.5;
+      for (let i = 0; i < count; i++) {
+        const c = i % cols, r = Math.floor(i / cols);
+        const x = m + ((c + 0.2 + rand() * 0.6) / cols) * (W - 2 * m);
+        const y = m + ((r + 0.2 + rand() * 0.6) / rows) * (H - 2 * m);
+        spawn(Math.round((x - ox) / CELL), Math.round((y - oy) / CELL), Math.floor(rand() * 4), i % 3 === 1);
+        agents[agents.length - 1].wait = rand() * 1.4;
+      }
       build();
     },
-    blast(x, y, n) { blast(x, y, n); },
     update(dt, i) {
       scroll = i.scrollY;
       place();
-      cur.x = i.cursorX; cur.y = i.cursorY; cur.on = i.cursor;
+      spread = Math.min(1, Math.max(0, i.spread));
+      px0 = i.cx; py0 = i.cy;
+      // all gathered again: lay the extra trails out afresh for the next time it spreads
+      if (spread <= 0.001 && ghostsSeen) { makeGhosts(); ghostsSeen = false; }
+      // the cursor only steers them once they are all out
+      cur.x = i.cursorX; cur.y = i.cursorY; cur.on = i.cursor && spread >= 0.98;
       step(dt);
       build();
     },

@@ -1,8 +1,10 @@
 /* ==========================================================================
    The world: one fixed WebGL canvas behind the page.
    - Background: quiet tracer agents (./tracers.ts) drawing thin, fading lines
-     on an invisible grid across the whole screen. On load, and again when the
-     cards fly off, a blast of the same lines branches out from behind the strip.
+     on an invisible grid across the whole screen. At the top of the page the
+     whole background is gathered into one point under the hero cards; as the
+     cards fly off on scroll, the lines flow out of it to fill the screen, and
+     scrolling back up gathers them back into that point.
    - Hero: stack cards glide along one long, wide curve and fly off on scroll.
    ========================================================================== */
 import * as THREE from 'three';
@@ -166,7 +168,7 @@ export async function createWorld(opts: {
   /* ---------- Layout ---------- */
   const L = {
     W: 1, Hh: 1, wpp: 0.01, halfH: 1, halfW: 1,
-    heroH: 1, stripDocX: 0, stripDocY: 0, sag: 60, card: 1, cardPx: 150,
+    heroH: 1, stripDocX: 0, stripDocY: 0, sag: 60, card: 1,
     stepPx: 200, spanPx: 2400, speed: 50,
   };
 
@@ -213,7 +215,6 @@ export async function createWorld(opts: {
     L.spanPx = L.stepPx * cards.length;
     L.speed = narrow ? 38 : 52; // px per second
     L.card = cw * L.wpp;
-    L.cardPx = ch;
 
     tracers.resize(L.W, L.Hh);
 
@@ -238,8 +239,8 @@ export async function createWorld(opts: {
   let started = false; // they set out once the loader has gone
   let lastMouseX = input.mouseX, lastMouseY = input.mouseY;
   let cursorIdle = 1e9; // seconds since the pointer last moved
-  let blastArmed = false; // the next scroll away from the top blasts again (re-armed back at the top)
-  const BLAST = mobile ? 20 : 44; // most branches a scroll blast may grow
+  let stormT = 1e9; // seconds since the "agent" easter egg (the background gathers / spreads once and goes back)
+  let spread = 0; // background: 0 gathered under the cards → 1 spread over the screen
 
   /** Page (document) coordinates → world position on the z = 0 plane. */
   function docToWorld(x: number, y: number, scrollY: number, out: THREE.Vector3) {
@@ -271,15 +272,12 @@ export async function createWorld(opts: {
   function flingStrip(vx: number) { dragging = false; glide = Math.max(-4000, Math.min(4000, -vx)); needsRender = true; }
   function pushStrip(d: number) { wheelLeft += d; needsRender = true; }
 
-  /** Tracers: set out from the card strip once the page is revealed, then keep walking. */
-  function runTracers(dt: number, s: number) {
+  /** Tracers: set out once the page is revealed, then keep walking. */
+  function runTracers(dt: number, s: number, target: number, mid: number) {
     if (!started) {
       if (!document.documentElement.classList.contains('loaded')) return;
       started = true;
-      // from behind the cards when they're on screen; otherwise from the middle of the screen
-      const stripOnScreen = L.stripDocY - s > -L.cardPx && L.stripDocY - s < L.Hh + L.cardPx;
-      if (stripOnScreen) tracers.start(L.stripDocX, L.stripDocY - s);
-      else tracers.start(L.W / 2, L.Hh / 2);
+      tracers.start();
       if (reduced) tracers.settle(6);
     }
     if (reduced) return;
@@ -287,11 +285,17 @@ export async function createWorld(opts: {
     const moved = input.mouseX !== lastMouseX || input.mouseY !== lastMouseY;
     lastMouseX = input.mouseX; lastMouseY = input.mouseY;
     cursorIdle = moved ? 0 : cursorIdle + dt;
+    // the lines flow out of (and back into) one point under the cards, a little behind the scroll so the motion stays soft;
+    // past the hero that point is the middle of the screen (`mid`), so the easter egg gathers them there
+    spread = damp(spread, target, 2.2, dt);
     tracers.update(dt, {
       scrollY: s,
       cursorX: (input.mouseX * 0.5 + 0.5) * L.W,
       cursorY: (0.5 - input.mouseY * 0.5) * L.Hh,
       cursor: cursorIdle < 3,
+      spread,
+      cx: L.stripDocX + (L.W / 2 - L.stripDocX) * mid,
+      cy: L.stripDocY - s + (L.Hh / 2 - (L.stripDocY - s)) * mid,
     });
   }
 
@@ -300,17 +304,17 @@ export async function createWorld(opts: {
     if (paused && !needsRender) return;
     const t = reduced ? 0 : time;
     const s = input.scrollY;
-    runTracers(dt, s);
 
     // Hero cards fly off as you scroll away
     const targetExpand = reduced ? 0 : smooth(L.heroH * 0.04, L.heroH * 0.85, s);
     expand = reduced ? 0 : damp(expand, targetExpand, 6, dt);
-    // the cards start to fly off: another blast from behind them
-    if (expand < 0.03) blastArmed = true;
-    else if (expand > 0.12 && blastArmed && started && !reduced) {
-      blastArmed = false;
-      tracers.blast(L.stripDocX, L.stripDocY - s, BLAST);
-    }
+    // The background spreads out from under the cards with the same scroll (and gathers back on the way up).
+    // The easter egg flips it once and back: at the top it spreads out, further down it gathers in.
+    stormT += dt;
+    const pulse = stormT < 2.6 ? Math.sin((Math.PI * stormT) / 2.6) : 0;
+    // (it is all out by the time the cards are about half gone)
+    const out = reduced ? 1 : smooth(L.heroH * 0.03, L.heroH * 0.6, s);
+    runTracers(dt, s, out + pulse * (1 - 2 * out), smooth(0.4, 0.9, out));
 
     // Mouse smoothing → a little camera parallax on the cards
     mouse.x = damp(mouse.x, input.mouseX, 3, dt);
@@ -398,7 +402,7 @@ export async function createWorld(opts: {
     flingStrip,
     pushStrip,
     setTheme: applyTheme,
-    storm() { if (!reduced) tracers.blast(L.W / 2, L.Hh / 2, BLAST * 2); },
+    storm() { stormT = 0; },
     focus() { /* the background stays the same in every section */ },
     setPaused(p) { paused = p; if (!p) needsRender = true; },
   };
