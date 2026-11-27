@@ -241,6 +241,7 @@ export async function createWorld(opts: {
   let cursorIdle = 1e9; // seconds since the pointer last moved
   let stormT = 1e9; // seconds since the "agent" easter egg (the background gathers / spreads once and goes back)
   let spread = 0; // background: 0 gathered under the cards → 1 spread over the screen
+  let lastS = input.scrollY, scrollSpeed = 0; // px/s, smoothed
 
   /** Page (document) coordinates → world position on the z = 0 plane. */
   function docToWorld(x: number, y: number, scrollY: number, out: THREE.Vector3) {
@@ -285,9 +286,14 @@ export async function createWorld(opts: {
     const moved = input.mouseX !== lastMouseX || input.mouseY !== lastMouseY;
     lastMouseX = input.mouseX; lastMouseY = input.mouseY;
     cursorIdle = moved ? 0 : cursorIdle + dt;
-    // the lines flow out of (and back into) one point under the cards, a little behind the scroll so the motion stays soft;
-    // past the hero that point is the middle of the screen (`mid`), so the easter egg gathers them there
-    spread = damp(spread, target, 2.2, dt);
+    // the lines flow out of (and back into) one point under the cards (past the hero, the middle of the
+    // screen: `mid`, where the easter egg gathers them). They follow the scroll softly when it is slow and
+    // as fast as it goes when it is fast, and never fall far behind, so they never trail into the next section.
+    const v = Math.abs(s - lastS) / Math.max(dt, 1e-3);
+    lastS = s;
+    scrollSpeed = damp(scrollSpeed, v, 8, dt);
+    spread = damp(spread, target, 2.2 + scrollSpeed / 120, dt);
+    spread = Math.min(target + 0.3, Math.max(target - 0.3, spread));
     tracers.update(dt, {
       scrollY: s,
       cursorX: (input.mouseX * 0.5 + 0.5) * L.W,
@@ -314,7 +320,7 @@ export async function createWorld(opts: {
     const pulse = stormT < 2.6 ? Math.sin((Math.PI * stormT) / 2.6) : 0;
     // (it is all out by the time the cards are about half gone)
     const out = reduced ? 1 : smooth(L.heroH * 0.03, L.heroH * 0.6, s);
-    runTracers(dt, s, out + pulse * (1 - 2 * out), smooth(0.4, 0.9, out));
+    runTracers(dt, s, out + pulse * (1 - 2 * out), smooth(L.heroH * 0.9, L.heroH * 1.2, s));
 
     // Mouse smoothing → a little camera parallax on the cards
     mouse.x = damp(mouse.x, input.mouseX, 3, dt);
