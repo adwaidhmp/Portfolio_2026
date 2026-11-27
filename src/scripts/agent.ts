@@ -527,6 +527,17 @@ function route(q: string): Answer {
   };
 }
 
+/** The bits of the Web Speech API the chat uses (not in every TypeScript DOM lib). */
+type SpeechRec = {
+  lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number;
+  start(): void; stop(): void; abort(): void;
+  onstart: (() => void) | null;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+type SpeechCtor = new () => SpeechRec;
+
 export function initAgentChat(deps: {
   reduced: boolean;
   highlight: (sectionId: string) => void;
@@ -543,6 +554,7 @@ export function initAgentChat(deps: {
 
   let busy = false;
   let greeted = false;
+  let stopVoice = () => {}; // set up with the mic below
 
   const scrollLog = () => { log.scrollTop = log.scrollHeight; };
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, deps.reduced ? 0 : ms));
@@ -776,6 +788,7 @@ export function initAgentChat(deps: {
     }
   }
   function shut(returnFocus = true) {
+    stopVoice();
     closeDraft();
     panel!.dataset.open = 'false';
     fab!.setAttribute('aria-expanded', 'false');
@@ -822,6 +835,7 @@ export function initAgentChat(deps: {
   });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    stopVoice();
     const q = input.value;
     input.value = '';
     ask(q);
@@ -870,6 +884,68 @@ export function initAgentChat(deps: {
   sugWrap?.querySelectorAll<HTMLButtonElement>('[data-sug-step]').forEach((btn) => btn.addEventListener('click', () => {
     sugs.scrollBy({ left: Number(btn.dataset.sugStep) * sugs.clientWidth * 0.7, behavior: deps.reduced ? 'auto' : 'smooth' });
   }));
+
+  /* ---------- Voice input: the browser's own speech recognition ----------
+     Free in Chrome and Edge (Google's speech service, no key) and in Safari. The mic stays hidden where
+     there's none (Firefox). Words show up in the box as you talk; press send (or Enter) when it's right. */
+  const mic = form.querySelector<HTMLButtonElement>('[data-agent-mic]');
+  const Recognition = (window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor }).SpeechRecognition
+    ?? (window as unknown as { webkitSpeechRecognition?: SpeechCtor }).webkitSpeechRecognition;
+  if (mic && Recognition) {
+    mic.hidden = false;
+    const hint = input.placeholder;
+    let rec: SpeechRec | null = null;
+    let hintT = 0;
+    const say = (text: string) => { // a short note in the empty box, then back to the usual hint
+      clearTimeout(hintT);
+      input.placeholder = text;
+      hintT = window.setTimeout(() => { input.placeholder = hint; }, 3500);
+    };
+    const idle = () => {
+      mic.classList.remove('is-listening');
+      mic.setAttribute('aria-pressed', 'false');
+      mic.setAttribute('aria-label', 'Speak your question');
+    };
+    stopVoice = () => { rec?.abort(); };
+    mic.addEventListener('click', () => {
+      if (rec) { rec.stop(); return; } // second tap: done talking
+      const r = new Recognition();
+      rec = r;
+      r.lang = navigator.language || 'en-US';
+      r.interimResults = true;
+      r.continuous = false;
+      r.maxAlternatives = 1;
+      const before = input.value.trim();
+      let heard = '';
+      r.onstart = () => {
+        clearTimeout(hintT);
+        mic.classList.add('is-listening');
+        mic.setAttribute('aria-pressed', 'true');
+        mic.setAttribute('aria-label', 'Stop listening');
+        input.placeholder = 'Listening… speak your question';
+      };
+      r.onresult = (e) => {
+        heard = '';
+        for (let i = 0; i < e.results.length; i++) heard += e.results[i][0].transcript;
+        heard = heard.trim();
+        input.value = [before, heard].filter(Boolean).join(' ').slice(0, input.maxLength);
+        input.scrollLeft = input.scrollWidth;
+      };
+      r.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') say('Microphone blocked. Allow it in your browser to talk.');
+        else if (e.error === 'no-speech') say("Didn't catch that. Tap the mic and try again.");
+        else if (e.error === 'network') say('Voice needs an internet connection.');
+        else if (e.error !== 'aborted') say("Voice input didn't work here. Type your question instead.");
+      };
+      r.onend = () => {
+        if (rec === r) rec = null;
+        idle();
+        if (!heard && input.placeholder.startsWith('Listening')) input.placeholder = hint;
+        if (heard && matchMedia('(hover: hover)').matches) input.focus({ preventScroll: true }); // phones: no keyboard pop-up
+      };
+      try { r.start(); } catch { rec = null; idle(); }
+    });
+  }
 
   /* Other parts of the page can open the chat with a question: dispatch 'agent:ask' with the text */
   document.addEventListener('agent:ask', (e) => {

@@ -890,24 +890,12 @@ html:not(.reduced) .tile__live i { animation: lq-dot 1.8s ease-in-out infinite; 
   width: 15px; height: 15px; border-radius: 50%; background: var(--bg-2); border: 2px solid var(--accent);
 }
 .role--current .role__node { background: var(--accent); box-shadow: 0 0 0 6px rgb(var(--accent-rgb) / .18); }
-.role__head { display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; padding: clamp(22px, 3vw, 38px); align-items: start; }
+.role__head { display: grid; grid-template-columns: 1fr; gap: 16px 24px; padding: clamp(22px, 3vw, 38px); align-items: start; }
 .role__when { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
 .role__title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 1rem + 1.6vw, 2.4rem); line-height: 1.02; letter-spacing: -.03em; text-transform: uppercase; }
 .role__company { margin: 10px 0 0; color: var(--fg-2); font-size: 1.02rem; }
 .role__company b { color: var(--fg); font-weight: 600; }
-.role__toggle {
-  display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
-  border: 1px solid rgb(var(--fg-rgb) / .25); background: transparent; color: var(--fg);
-  transition: transform .6s var(--ease-out-expo), background .3s, border-color .3s, color .3s;
-}
-.role__toggle:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.role[data-open="true"] .role__toggle { transform: rotate(45deg); }
 .role__flow { padding: 0 clamp(22px, 3vw, 38px) 18px; }
-.role__lead { margin: 0; padding: 0 clamp(22px, 3vw, 38px) clamp(22px, 3vw, 34px); color: rgb(var(--fg-rgb) / .8); max-width: 75ch; }
-.role[data-open="true"] .role__lead { display: none; }
-.role__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .8s var(--ease-out-expo); }
-.role[data-open="true"] .role__body { grid-template-rows: 1fr; }
-.role__body > div { overflow: hidden; }
 .role__inner { padding: 0 clamp(22px, 3vw, 38px) clamp(24px, 3vw, 38px); display: grid; gap: 26px; }
 .role__points { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .role__points li { position: relative; padding-left: 26px; color: rgb(var(--fg-rgb) / .84); max-width: 82ch; }
@@ -943,9 +931,6 @@ html:not(.reduced) .flow__link i { animation: packet-x 5s linear infinite; anima
   .flow__link i { left: -3px; }
   html:not(.reduced) .flow__link i { animation-name: packet-y; }
   @keyframes packet-y { 0% { top: 0; opacity: 1; } 10% { top: calc(100% - 7px); opacity: 1; } 11%, 100% { opacity: 0; } }
-  .role__head { grid-template-columns: 1fr; }
-  .role__toggle { position: absolute; right: 18px; top: 18px; width: 44px; height: 44px; }
-  .role__title { padding-right: 48px; }
 }
 
 /* ==========================================================================
@@ -1295,6 +1280,16 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
 .agent__form input { flex: 1; min-width: 0; height: 40px; border: 0; background: transparent; color: var(--fg); font: inherit; }
 .agent__form input:focus { outline: none; }
 .agent__form button { width: 40px; height: 40px; border-radius: 12px; border: 0; background: var(--accent); display: grid; place-items: center; color: var(--on-accent); }
+/* mic: quiet until it listens, then a pulsing teal ring */
+.agent__form .agent__mic { flex: none; background: transparent; border: 1px solid rgb(var(--fg-rgb) / .14); color: var(--fg-2); transition: border-color .25s, color .25s, background .25s; }
+.agent__form .agent__mic[hidden] { display: none; }
+.agent__form .agent__mic:hover { border-color: var(--accent); color: var(--accent-ink); }
+.agent__form .agent__mic.is-listening { border-color: var(--accent); background: rgb(var(--accent-rgb) / .12); color: var(--accent-ink); animation: mic-pulse 1.4s ease-out infinite; }
+html.reduced .agent__form .agent__mic.is-listening { animation: none; }
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / .45); }
+  100% { box-shadow: 0 0 0 10px rgb(var(--accent-rgb) / 0); }
+}
 
 /* "Message Adwaidh?" card: slides up inside the chat every 3 questions, prefilled from the conversation */
 .agent__draft {
@@ -1448,8 +1443,7 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
     font-size: .62rem; letter-spacing: .05em; line-height: 1.25; white-space: normal;
   }
 
-  /* experience: every role is always open on phones (main.ts), so no toggle button */
-  .role__toggle { display: none; }
+  /* experience */
   .xp { padding-left: 22px; }
   .xp__rail { left: 6px; }
   .xp__list { gap: 16px; }
@@ -1457,11 +1451,9 @@ html:not(.reduced) .typing-caret { animation: blink .8s steps(1) infinite; }
   .role__node { left: -22.5px; top: 24px; width: 13px; height: 13px; }
   .role__head { padding: 16px 16px 12px; gap: 10px; }
   .role__when { margin-bottom: 8px; gap: 6px; }
-  .role__title { font-size: 1.1rem; padding-right: 44px; }
+  .role__title { font-size: 1.1rem; }
   .role__company { margin-top: 6px; font-size: .86rem; }
-  .role__toggle { top: 12px; right: 12px; width: 38px; height: 38px; }
   .role__flow { padding: 0 16px 14px; }
-  .role__lead { padding: 0 16px 16px; font-size: .9rem; }
   .role__inner { padding: 0 16px 18px; gap: 16px; }
   .role__points { gap: 9px; }
   .role__points li { padding-left: 18px; font-size: .88rem; line-height: 1.5; }

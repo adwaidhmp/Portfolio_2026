@@ -50,6 +50,10 @@ import AgentIcon from './AgentIcon.astro';
     <span aria-hidden="true">❯</span>
     <label class="sr-only" for="agent-input">Ask a question about Adwaidh</label>
     <input id="agent-input" type="text" autocomplete="off" placeholder="Ask about skills, MCP, relocation…" maxlength="200" />
+    <!-- Voice input (agent.ts shows it only where the browser can do speech recognition, e.g. Chrome) -->
+    <button type="button" class="agent__mic" aria-label="Speak your question" aria-pressed="false" data-agent-mic hidden>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="1.5" width="5" height="8.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5V15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+    </button>
     <button type="submit" aria-label="Send question">
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" /></svg>
     </button>

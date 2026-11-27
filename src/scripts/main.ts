@@ -237,27 +237,6 @@ if (xpProg) {
   });
   if (reduced) xpProg.style.setProperty('--p', '1');
 }
-$$('[data-role-toggle]').forEach((btn) => {
-  // On phones every role is always open, full details showing (the toggle button is hidden in CSS)
-  if (matchMedia('(max-width: 600px)').matches) {
-    const role = btn.closest<HTMLElement>('[data-role]')!;
-    // Open instantly (no .8s height animation) so the page's scroll positions are measured on
-    // the final layout; otherwise reveals further down (e.g. the contact form) fire late.
-    const body = $<HTMLElement>('.role__body', role);
-    if (body) body.style.transition = 'none';
-    role.dataset.open = 'true';
-    btn.setAttribute('aria-expanded', 'true');
-    if (body) { void body.offsetHeight; requestAnimationFrame(() => { body.style.transition = ''; }); }
-  }
-  btn.addEventListener('click', () => {
-    const role = btn.closest<HTMLElement>('[data-role]')!;
-    const open = role.dataset.open !== 'true';
-    role.dataset.open = String(open);
-    btn.setAttribute('aria-expanded', String(open));
-    setTimeout(() => { ScrollTrigger.refresh(); world?.relayout(); }, 850);
-  });
-});
-
 /* ---------- Counters ---------- */
 $$('[data-count]').forEach((el) => {
   const to = parseFloat(el.dataset.count ?? '0');
