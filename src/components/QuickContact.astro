@@ -1,0 +1,85 @@
+---
+import { contact } from '../data/portfolio';
+---
+<!-- WhatsApp message box at the very end of the page. Sending opens WhatsApp (the app on phones,
+     WhatsApp Web / desktop on computers) with the visitor's name and message already typed in. -->
+<section id="message" class="section qc" aria-labelledby="message-title" data-section>
+  <div class="container-x qc__inner">
+    <div class="qc__intro">
+      <p class="t-micro qc__eyebrow">
+        <svg class="qc__wa" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M8.6 7.6c.3-.6.6-.6.9-.6h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.3 0 .6.5.9 1.2 1.7 2.1 2.2.3.2.4.1.6 0l.7-.8c.2-.2.3-.2.6-.1l1.8.9c.3.1.4.2.4.4 0 .5-.2 1.2-.7 1.6-.5.4-1.2.6-2 .4-1-.2-2.6-.9-3.9-2.2-1.4-1.4-2.1-2.9-2.3-3.8-.1-.8.1-1.6.4-1.9Z" fill="currentColor" /></svg>
+        WhatsApp
+      </p>
+      <h2 class="qc__title" id="message-title">Got a project or a role? <span class="qc__accent">Say hello.</span></h2>
+      <p class="qc__text">
+        Type your name and message. Sending opens WhatsApp with everything filled in, straight to my number
+        (<a class="ulink" href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener">{contact.phone}</a>).
+      </p>
+    </div>
+
+    <form class="cform qc__form" data-wa-form data-wa={contact.whatsapp} novalidate>
+      <div class="field">
+        <label class="t-micro" for="qc-name">Name</label>
+        <input id="qc-name" name="name" type="text" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label class="t-micro" for="qc-msg">Message</label>
+        <textarea id="qc-msg" name="message" required placeholder="What do you need built?"></textarea>
+      </div>
+      <button class="btn btn--gold qc__send" type="submit">Send on WhatsApp <span class="arrow" aria-hidden="true">↗</span></button>
+      <p class="cform__status" role="status" aria-live="polite" data-wa-status></p>
+    </form>
+  </div>
+</section>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-wa-form]');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const status = form.querySelector('[data-wa-status]')!;
+    const data = new FormData(form);
+    const name = String(data.get('name') ?? '').trim();
+    const message = String(data.get('message') ?? '').trim();
+    if (!name || !message) {
+      status.textContent = 'Please type your name and a message.';
+      form.querySelector<HTMLElement>(name ? '#qc-msg' : '#qc-name')?.focus();
+      return;
+    }
+    const text = `Hi Adwaidh, I'm ${name}.\n\n${message}\n\n(Sent from your portfolio)`;
+    const url = `https://wa.me/${form.dataset.wa}?text=${encodeURIComponent(text)}`;
+    // a new tab keeps the portfolio open; if a popup blocker stops it, go there in this tab.
+    // (Not window.open(..., 'noopener'): that always returns null, so the fallback would always fire.)
+    const win = window.open(url, '_blank');
+    if (win) win.opener = null;
+    else window.location.href = url;
+    status.textContent = 'Opening WhatsApp with your message. Just tap send.';
+  });
+</script>
+
+<style>
+  .qc { --sec-pad: clamp(56px, 8vw, 96px); }
+  .qc__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(24px, 4vw, 64px);
+    align-items: center;
+  }
+  .qc__eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--accent-ink); }
+  .qc__wa { width: 18px; height: 18px; flex: none; }
+  .qc__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    text-transform: uppercase;
+  }
+  .qc__accent { color: var(--accent-ink); }
+  .qc__text { margin: 16px 0 0; color: var(--fg-2); line-height: 1.55; max-width: 44ch; }
+  /* the main contact form is sticky on desktop; this one just sits in the flow */
+  .qc__form { position: relative; top: auto; }
+  .qc__form textarea { min-height: 110px; }
+  .qc__send { justify-self: start; }
+
+  @media (max-width: 900px) { .qc__inner { grid-template-columns: 1fr; } }
+</style>

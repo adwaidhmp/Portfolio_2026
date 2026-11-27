@@ -6,12 +6,28 @@ import { openCompose } from './compose';
 type Seg = { text: string; href?: string };
 type Answer = { tool: string; result: string; segs: Seg[]; section?: string; sectionLabel?: string; id?: string };
 type Key = string | [string, number];
-/** `re` matches whole phrasings (greetings, small talk); a match adds `reScore` (default 6). */
-type Intent = { id: string; keys: Key[]; re?: RegExp; reScore?: number; answer: () => Answer };
+/** `re` matches whole phrasings (greetings, small talk); a match adds `reScore` (default 6).
+ *  `answer` gets the cleaned-up question, for answers that depend on what exactly was asked. */
+type Intent = { id: string; keys: Key[]; re?: RegExp; reScore?: number; answer: (q: string) => Answer };
 
 const T = (text: string, href?: string): Seg => ({ text, href });
 const current = experience.find((r) => r.current) ?? experience[0];
 const cat = (id: string) => skills.find((c) => c.id === id);
+const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '');
+const years = about.highlights[0].value;
+
+/* personal details (from the resume) */
+const born = new Date(`${profile.dob}T00:00:00`);
+const bornText = born.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+function age() {
+  const n = new Date();
+  const hadBirthday = n.getMonth() > born.getMonth() || (n.getMonth() === born.getMonth() && n.getDate() >= born.getDate());
+  return n.getFullYear() - born.getFullYear() - (hadBirthday ? 0 : 1);
+}
+const degree = education.find((e) => e.kind === 'Degree');
+const certs = education.filter((e) => e.kind !== 'Degree');
+const graduated = degree?.period.match(/(\d{4})\s*$/)?.[1];
+const nationalityText = () => (profile.nationality === 'Indian' ? 'an Indian national' : `${profile.nationality} by nationality`);
 
 /* small-talk helpers */
 const partOfDay = () => { const h = new Date().getHours(); return h < 5 ? 'Hey' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
@@ -110,7 +126,7 @@ const intents: Intent[] = [
   },
   {
     id: 'stack',
-    keys: ['stack', 'tech', 'skill', 'skills', 'technolog', 'language', 'framework', 'python', 'django', 'fastapi', 'react', 'docker', 'aws', 'know'],
+    keys: ['stack', 'tech', 'skill', 'skills', 'technolog', 'framework', 'python', 'django', 'fastapi', 'react', 'docker', 'aws', 'know'],
     answer: () => ({
       tool: 'list_skills(group_by="category")',
       result: `${skills.reduce((n, c) => n + c.skills.length, 0)} skills · ${skills.length} clusters`,
@@ -127,22 +143,155 @@ const intents: Intent[] = [
   },
   {
     id: 'relocation',
-    keys: [['relocat', 3], ['gcc', 3], 'dubai', 'uae', 'saudi', 'qatar', 'oman', 'kuwait', 'bahrain', 'abroad', 'move', 'remote', 'location', 'where', 'based', 'live', 'visa'],
+    keys: [['relocat', 3], ['gcc', 3], 'dubai', 'uae', 'saudi', 'qatar', 'oman', 'kuwait', 'bahrain', 'abroad', 'move', 'remote', 'overseas', 'foreign', 'gulf', 'middle east'],
     answer: () => ({
       tool: 'get_profile(fields=["location","relocation"])',
       result: 'ok',
       section: 'contact', sectionLabel: 'Contact',
-      segs: [T(`Yes. Adwaidh is based in ${profile.location} and is open to relocation, including the GCC. He's ${profile.nationality === 'Indian' ? 'an Indian national' : profile.nationality}, ${profile.visa}, and his notice period is ${profile.notice}. He's also open to remote roles and freelance projects.`)],
+      segs: [T(`Yes. ${profile.firstName} is based in ${profile.location} and is open to relocation, including the GCC. He's ${nationalityText()} with ${profile.passport}, ${profile.visa}, and his notice period is ${profile.notice}. He's also open to remote roles and freelance projects.`)],
+    }),
+  },
+  /* ---------- personal details (all from his resume) ---------- */
+  {
+    id: 'personal',
+    keys: [['personal', 5], ['bio', 4], ['biodata', 5], ['bio data', 5], ['basic info', 4], ['basic details', 4], ['cv details', 3]],
+    answer: () => ({
+      tool: 'get_profile(fields="personal")',
+      result: 'ok',
+      section: 'about', sectionLabel: 'About',
+      segs: [
+        T(
+          `Full name: ${profile.name}\n` +
+          `Date of birth: ${bornText} (age ${age()})\n` +
+          `Nationality: ${profile.nationality}, with ${profile.passport}\n` +
+          `Lives in: ${profile.location}\n` +
+          `Languages: ${list(profile.languages)}\n` +
+          (degree ? `Education: ${degree.title}, ${degree.org} (${degree.period})\n` : '') +
+          `Current role: ${current.title} at ${current.company}${current.companyNote ? ` (${current.companyNote})` : ''}\n` +
+          `Notice period: ${profile.notice}\n` +
+          `Visa: ${profile.visa}\n` +
+          `Relocation: open, including the GCC\n` +
+          'Email: ',
+        ),
+        T(contact.email, `mailto:${contact.email}`),
+        T('\nPhone: '), T(contact.phone, contact.phoneHref),
+      ],
     }),
   },
   {
+    id: 'name',
+    keys: [],
+    re: /\b(full name|his name|adwaidh s name|what is he called|last name|surname|first name|name of (the )?(developer|owner|person))\b/,
+    answer: () => ({
+      tool: 'get_profile(fields=["name"])',
+      result: 'ok',
+      segs: [T(`His full name is ${profile.name}.`)],
+    }),
+  },
+  {
+    id: 'age',
+    keys: [['age', 4], ['old', 3], ['birth', 4], ['born', 4], ['dob', 5], ['birthday', 2]],
+    answer: () => ({
+      tool: 'get_profile(fields=["dob"])',
+      result: 'ok',
+      segs: [T(`${profile.firstName} was born on ${bornText}, so he's ${age()} years old.`)],
+    }),
+  },
+  {
+    id: 'nationality',
+    keys: [['nationality', 5], ['national', 3], ['citizen', 4], ['indian', 3], ['passport', 5], ['ethnic', 3]],
+    answer: () => ({
+      tool: 'get_profile(fields=["nationality","passport"])',
+      result: 'ok',
+      segs: [T(`He's ${nationalityText()} and holds ${profile.passport}. For roles abroad, including the GCC, he ${profile.visa.replace(/ for roles abroad$/, '')}.`)],
+    }),
+  },
+  {
+    id: 'visa',
+    keys: [['visa', 5], ['work permit', 5], ['sponsor', 4], ['iqama', 5], ['permit', 3]],
+    answer: () => ({
+      tool: 'get_profile(fields=["visa","passport"])',
+      result: 'ok',
+      section: 'contact', sectionLabel: 'Contact',
+      segs: [T(`He ${profile.visa} (for example in the GCC). He holds ${profile.passport}, his notice period is ${profile.notice}, and he's open to relocation.`)],
+    }),
+  },
+  {
+    id: 'location',
+    keys: [['hometown', 5], ['home town', 5], ['native', 4], ['address', 5], ['based', 2], ['district', 3]],
+    // "location"/"located" as whole words only (not inside "relocation"/"relocated")
+    re: /\b(location|located|where (is|does|did|s) (he|adwaidh)( currently)? (from|live|living|stay|staying|based|located|reside|residing)|where s (he|adwaidh) from|where (he|adwaidh) (lives|stays|is from)|which (city|state|place|country|district|town)|(he|adwaidh) (lives?|stays?|living) in)\b/,
+    answer: (q) => ({
+      tool: 'get_profile(fields=["location"])',
+      result: 'ok',
+      section: 'contact', sectionLabel: 'Contact',
+      segs: [T(
+        `He lives in ${profile.location} (IST, UTC+5:30). He's open to relocation, including the GCC, and to remote roles.` +
+        (/\baddress\b/.test(q) ? `\nHis street address isn't shared here. To reach him, email ${contact.email} or call ${contact.phone}.` : ''),
+      )],
+    }),
+  },
+  {
+    id: 'notice',
+    keys: [['notice', 5], ['join', 3], ['joining', 2], ['how soon', 4], ['start date', 4], ['when can he', 3], ['immediate', 3], ['serving', 3]],
+    answer: () => ({
+      tool: 'get_profile(fields=["notice"])',
+      result: profile.notice,
+      section: 'contact', sectionLabel: 'Contact',
+      segs: [
+        T(`His notice period is ${profile.notice}${profile.notice === 'immediate' ? ', so he can join right away' : ''}. He's open to full-time, remote or freelance work, and to relocation, including the GCC.\nTo move ahead, email `),
+        T(contact.email, `mailto:${contact.email}`),
+      ],
+    }),
+  },
+  {
+    id: 'current',
+    keys: [['current', 3], ['now', 2], ['present', 2], ['designation', 5], ['job title', 5], ['employer', 4], ['where does he work', 5], ['work now', 4], ['works now', 4], ['working now', 4], ['working at', 3], ['works at', 3]],
+    answer: () => ({
+      tool: 'get_experience(current=true)',
+      result: 'ok',
+      section: 'experience', sectionLabel: 'Experience',
+      segs: [T(
+        `He's a ${current.title} at ${current.company}${current.companyNote ? ` (${current.companyNote})` : ''}, since ${current.start}. ` +
+        'He builds agentic AI systems there: an autonomous AI coding agent on FastAPI and the Claude API, MCP servers for Claude and ChatGPT, and an in-app AI assistant, plus backend features and deployments.',
+      )],
+    }),
+  },
+  {
+    id: 'languages',
+    keys: [['language', 3]],
+    answer: (q) => {
+      const code = /\b(programming|coding|code|tech|computer|software)\b/.test(q);
+      const spoken = /\b(speak|spoken|talk|communicat|mother tongue|fluent)/.test(q);
+      const prog = cat('lang')?.skills ?? [];
+      return {
+        tool: 'get_profile(fields=["languages"])',
+        result: 'ok',
+        section: code && !spoken ? 'skills' : undefined, sectionLabel: 'Skills',
+        segs: [T(code && !spoken
+          ? `He codes in ${list(prog)}, with Python as his main language.`
+          : `He speaks ${list(profile.languages)}.\nProgramming languages: ${list(prog)}, with Python as his main one.`)],
+      };
+    },
+  },
+  {
     id: 'spoken',
-    keys: [['speak', 4], 'spoken', 'english', 'malayalam', 'hindi', 'mother tongue', 'communicat'],
+    keys: [['speak', 4], 'spoken', 'english', 'malayalam', 'hindi', ['mother tongue', 8], 'communicat', 'fluent'],
     answer: () => ({
       tool: 'get_profile(fields=["languages"])',
       result: `${profile.languages.length} languages`,
       section: 'about', sectionLabel: 'About',
-      segs: [T(`He speaks ${profile.languages.slice(0, -1).join(', ')} and ${profile.languages[profile.languages.length - 1]}.`)],
+      segs: [T(`He speaks ${list(profile.languages)}.`)],
+    }),
+  },
+  {
+    // personal things that aren't on his resume: say so instead of guessing
+    id: 'private',
+    keys: [['married', 5], ['marital', 5], ['wife', 5], ['girlfriend', 5], ['boyfriend', 5], ['relationship', 4], ['religion', 5], ['caste', 5], ['gender', 5], ['hobby', 5], ['hobbies', 5], ['family', 4], ['father', 5], ['mother', 4], ['parents', 5], ['sibling', 5], ['brother', 4], ['sister', 4], ['height', 5], ['weight', 5], ['kids', 5], ['children', 5]],
+    answer: () => ({
+      tool: 'get_profile(fields=["personal"])',
+      result: 'not on resume',
+      segs: [T(`That isn't on ${profile.firstName}'s resume, so I won't guess. Personal details I can share: his full name, age and date of birth, nationality and passport, where he lives, the languages he speaks, his education, notice period and visa status.`)],
     }),
   },
   {
@@ -163,7 +312,7 @@ const intents: Intent[] = [
   },
   {
     id: 'hire',
-    keys: ['hire', 'hiring', 'freelance', 'available', 'availability', 'open to', 'job', 'role', 'position', 'vacanc', 'notice', 'join', 'opportunit', 'recruit', 'full time', 'genai', 'generative'],
+    keys: ['hire', 'hiring', 'freelance', 'available', 'availability', 'open to', 'job', 'role', 'position', 'vacanc', 'opportunit', 'recruit', 'full time', 'genai', 'generative'],
     answer: () => ({
       tool: 'get_availability()',
       result: 'available',
@@ -176,13 +325,13 @@ const intents: Intent[] = [
   },
   {
     id: 'experience',
-    keys: ['experience', 'years', 'work history', 'company', 'desklog', 'bridgeon', 'intern', 'career', 'worked', 'employ'],
+    keys: ['experience', 'years', 'work history', 'company', 'desklog', 'bridgeon', 'intern', 'career', 'worked', 'employ', ['fresher', 4], ['how long', 2]],
     answer: () => ({
       tool: 'get_experience()',
       result: `${experience.length} roles`,
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
-        `${about.highlights[0].value}+ years hands-on.\n` +
+        `He has ${years}+ years of hands-on experience:\n` +
         experience.map((r) => `• ${r.title} at ${r.company}${r.companyNote ? ` (${r.companyNote})` : ''}, ${r.start} to ${r.end}`).join('\n'),
       )],
     }),
@@ -216,12 +365,15 @@ const intents: Intent[] = [
   },
   {
     id: 'education',
-    keys: ['education', 'degree', 'bca', 'university', 'college', 'certif', 'study', 'studied', 'course', 'qualification'],
+    keys: ['education', 'degree', 'bca', 'university', 'college', 'certif', 'study', 'studied', 'course', 'qualification', ['graduat', 3], ['passed out', 3], ['pass out', 3], ['passout', 3], ['year of passing', 4], ['bachelor', 3], ['school', 2]],
     answer: () => ({
       tool: 'get_education()',
       result: `${education.length} records`,
       section: 'education', sectionLabel: 'Education',
-      segs: [T(education.map((e) => `• ${e.title}, ${e.org} (${e.period})`).join('\n'))],
+      segs: [T(
+        (degree ? `He holds a ${degree.title} from ${degree.org} (${degree.period})${graduated ? `, graduating in ${graduated}` : ''}.\n` : '') +
+        (certs.length ? `Certifications:\n${certs.map((e) => `• ${e.title}, ${e.org} (${e.period})`).join('\n')}` : ''),
+      )],
     }),
   },
   {
@@ -235,12 +387,18 @@ const intents: Intent[] = [
   },
   {
     id: 'about',
-    keys: ['who is', 'who are', 'about him', 'about adwaidh', 'summary', 'yourself', 'introduce', 'background', 'adwaidh', 'profile'],
+    keys: ['who is', 'about him', 'about adwaidh', 'summary', 'yourself', 'introduce', 'background', 'adwaidh', 'profile'],
     answer: () => ({
       tool: 'get_profile()',
       result: 'ok',
       section: 'about', sectionLabel: 'About',
-      segs: [T(about.summary)],
+      // the page's summary is written as "I"; the agent talks about him, so this is the same story in the third person
+      segs: [T(
+        `${profile.name} is an AI-focused Python developer from ${profile.location} with ${years}+ years of experience building LLM-powered products. ` +
+        `At ${current.companyNote ?? current.company} he builds agentic AI systems in production: an autonomous FastAPI coding agent on the Claude API, MCP servers that connect the product to Claude and ChatGPT, and an in-app AI agent that answers data questions and takes actions from chat. ` +
+        'He has strong Python backend skills (Django, DRF, FastAPI, Celery, Redis), React on the frontend, and hands-on RAG and LangGraph work.\n' +
+        `He's ${age()}, ${nationalityText()}, speaks ${list(profile.languages)}, and can join with ${profile.notice === 'immediate' ? 'immediate notice' : `a ${profile.notice} notice period`}.`,
+      )],
     }),
   },
   {
@@ -311,7 +469,7 @@ const intents: Intent[] = [
     answer: () => ({
       tool: 'list_tools()',
       result: 'ok',
-      segs: [T(`I can tell you about ${profile.firstName}'s AI work, MCP servers, tech stack, backend and DevOps experience, projects, education, the roles he's open to, salary expectations, working hours, the time in India, or how to contact him. Just ask!`)],
+      segs: [T(`I can tell you about ${profile.firstName}'s AI work, MCP servers, tech stack, backend and DevOps experience, projects, education, the roles he's open to, salary expectations, working hours, the time in India, or how to contact him.\nPersonal details too: his age, nationality and passport, where he lives, the languages he speaks, notice period and visa status. Just ask!`)],
     }),
   },
   {
@@ -361,11 +519,11 @@ function route(q: string): Answer {
     if (it.re?.test(s)) score += it.reScore ?? 6;
     if (score > bestScore) { bestScore = score; best = it; }
   }
-  if (best) return { ...best.answer(), id: best.id };
+  if (best) return { ...best.answer(s), id: best.id };
   return {
     tool: 'search_portfolio(query=…)',
     result: '0 matches',
-    segs: [T(`Hmm, I'm not sure about that one. I only know what's on ${profile.firstName}'s portfolio. Try asking about his AI work, skills, experience, the roles he's open to, salary expectations, working hours or how to contact him.`)],
+    segs: [T(`Hmm, I'm not sure about that one. I only know what's on ${profile.firstName}'s portfolio. Try asking about his AI work, skills, experience, personal details, the roles he's open to, salary expectations, working hours or how to contact him.`)],
   };
 }
 

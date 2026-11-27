@@ -1,0 +1,71 @@
+---
+import SectionHeader from './SectionHeader.astro';
+import { services } from '../data/portfolio';
+---
+<section id="services" class="section" aria-labelledby="services-title" data-section>
+  <div class="container-x">
+    <SectionHeader
+      index="07"
+      label="Services"
+      title="Hire me"
+      script="for your project"
+      id="services-title"
+      sub="Freelance, remote or full-time. A full stack & AI developer from Kerala, India, building web apps, AI agents, WhatsApp bots, websites, UI and 3D experiences for clients anywhere, at affordable rates."
+    />
+    <ul class="svc__grid" role="list">
+      {services.map((s, i) => (
+        <li class:list={['svc glass', s.wide && 'svc--wide']} data-reveal>
+          <span class="svc__no t-micro" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3 class="svc__title">{s.title}</h3>
+          <p class="svc__text">{s.text}</p>
+          <ul class="svc__tags" role="list" aria-label="Tools and topics">
+            {s.tags.map((t) => <li class="pill">{t}</li>)}
+          </ul>
+          {s.link && <a class="ulink svc__link" href={s.link.href}>{s.link.label} <span aria-hidden="true">↗</span></a>}
+        </li>
+      ))}
+    </ul>
+    <p class="svc__cta" data-reveal>
+      <a class="btn btn--gold" href="#message">Tell me about your project <span class="arrow" aria-hidden="true">↗</span></a>
+      <a class="btn btn--ghost" href="#faq">Common questions</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .svc__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(14px, 2vw, 24px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .svc {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: clamp(20px, 2.4vw, 30px);
+    transition: border-color .4s var(--ease-out-expo), transform .5s var(--ease-out-expo);
+  }
+  .svc:hover { border-color: rgb(var(--accent-rgb) / .55); transform: translateY(-3px); }
+  .svc__no { color: var(--accent-ink); }
+  .svc__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    line-height: 1.2;
+    letter-spacing: -.01em;
+  }
+  .svc__text { margin: 0; color: var(--fg-2); line-height: 1.55; flex: 1; }
+  .svc__tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 4px 0 0; padding: 0; }
+  .svc__tags .pill { font-size: .72rem; }
+  .svc--wide { grid-column: 1 / -1; }
+  .svc--wide .svc__text { max-width: 78ch; }
+  .svc__link { align-self: flex-start; margin-top: 4px; color: var(--accent-ink); font-weight: 600; }
+  .svc__cta { display: flex; flex-wrap: wrap; gap: 12px; margin: clamp(24px, 3vw, 40px) 0 0; }
+
+  @media (max-width: 1000px) { .svc__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .svc__grid { grid-template-columns: 1fr; } }
+</style>

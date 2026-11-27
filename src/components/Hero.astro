@@ -1,6 +1,6 @@
 ---
 import Mark from './Mark.astro';
-import { profile } from '../data/portfolio';
+import { profile, seo } from '../data/portfolio';
 import { wheelCards } from '../data/cards';
 
 const first = profile.firstName.toUpperCase();
@@ -30,7 +30,7 @@ const after = aiAt >= 0 ? first.slice(aiAt + 2) : '';
         <span class:list={['ai', profile.photo && 'has-photo']} style={profile.photo ? `--ai-photo:url('${profile.photo}')` : undefined}><span class="ch">A</span><span class="ch lower">i</span></span>
       )}{after.split('').map((c) => <span class="ch">{c}</span>)}{' '}
       <sup data-intro><span class="pill pill--line">{profile.lastName}<i class="half" aria-hidden="true"></i></span></sup>
-      <span class="sr-only">, {profile.shortTitle}, Agentic AI &amp; Python Developer</span>
+      <span class="sr-only">, {seo.role}: Python, Agentic AI &amp; Web Developer in Kerala, India</span>
     </h1>
   </div>
 

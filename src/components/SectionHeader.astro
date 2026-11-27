@@ -14,7 +14,7 @@ interface Props {
   /** A smaller title, so a one-line title leaves room for the script beside it. */
   small?: boolean;
 }
-const { index, label, title, script, sub, id, total = '06', compact = false, stack = false, small = false } = Astro.props;
+const { index, label, title, script, sub, id, total = '08', compact = false, stack = false, small = false } = Astro.props;
 const words = title.split(' ');
 ---
 <header class:list={['shead', compact && 'shead--compact', stack && 'shead--stack', small && 'shead--small']}>

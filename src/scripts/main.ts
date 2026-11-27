@@ -327,8 +327,10 @@ function setActive(id: string | null) {
   world?.focus(id);
 }
 const navIds = navLinks.map((a) => a.dataset.navLink!);
+// sections without their own nav tab light up the closest one
+const navAlias: Record<string, string> = { education: 'projects', services: 'contact', faq: 'contact', message: 'contact' };
 $$('[data-section]').forEach((sec) => {
-  const navId = navIds.includes(sec.id) ? sec.id : sec.id === 'education' ? 'projects' : null;
+  const navId = navIds.includes(sec.id) ? sec.id : navAlias[sec.id] ?? null;
   ScrollTrigger.create({
     trigger: sec, start: 'top 55%', end: 'bottom 55%',
     onToggle: (st) => { if (st.isActive) setActive(navId); },
@@ -494,8 +496,8 @@ $$<HTMLButtonElement>('[data-copy]').forEach((b) => b.addEventListener('click', 
 
 /* ---------- Email links + contact form ---------- */
 initComposeLinks(); // every mailto: link (Email me, the address, agent answers) opens the "Send with" menu
-const form = $<HTMLFormElement>('[data-form]');
-form?.addEventListener('submit', async (e) => {
+// every contact form on the page (the main one and the short one at the end) works the same way
+$$<HTMLFormElement>('[data-form]').forEach((form) => form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const status = $('[data-form-status]', form)!;
   const data = new FormData(form);
@@ -541,7 +543,7 @@ form?.addEventListener('submit', async (e) => {
       },
     });
   }
-});
+}));
 
 /* ---------- Agent chat ---------- */
 function highlight(id: string) {
@@ -631,33 +633,39 @@ function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], { autoplay
     dots.find((d) => d.classList.contains('is-on'))?.click();
   });
   // Autoplay: next page every `autoplayMs`, looping back to the first. It starts when the row scrolls into view
-  // (the first page stays an extra FIRST_WAIT_MS) and stops when it leaves. It never moves while a finger (or mouse
-  // button) is down on the row; a press and hold (a finger kept still for HOLD_MS) or a swipe stops it for `idleMs`
-  // after letting go. A quick tap doesn't stop it. Only on phones (the row scrolls sideways) with the tab open;
-  // off for visitors who prefer reduced motion.
+  // (half of it visible; the first move comes FIRST_MOVE_MS later) and stops when it leaves. The first automatic move always happens:
+  // touches are ignored until then. After it, a press and hold (a finger kept still for HOLD_MS) or a sideways
+  // swipe stops it for `idleMs` after letting go, and it never moves while a finger is down. A quick tap, or
+  // scrolling the page up/down with a finger on the cards, doesn't stop it. Only on phones (the row scrolls
+  // sideways) with the tab open; off for visitors who prefer reduced motion.
   if (autoplayMs && !reduced) {
-    const HOLD_MS = 350, MOVE_PX = 12, FIRST_WAIT_MS = 1000;
-    let held = false, moved = false, pausedUntil = 0, sx = 0, sy = 0, holdT = 0, timer = 0, startT = 0;
+    const HOLD_MS = 350, MOVE_PX = 12, FIRST_MOVE_MS = 500;
+    let held = false, moved = false, swiped = false, pausedUntil = 0, sx = 0, sy = 0, holdT = 0, timer = 0, startT = 0;
+    let armed = false; // true after the first automatic move; touches before that are ignored
     const scrollable = () => getComputedStyle(row).overflowX !== 'visible' && row.scrollWidth > row.clientWidth + 1;
     const next = () => {
-      if (held || Date.now() < pausedUntil || document.hidden || !scrollable() || pauseWhen()) return;
+      if ((armed && held) || Date.now() < pausedUntil || document.hidden || !scrollable() || pauseWhen()) return;
       const cur = Math.max(0, dots.findIndex((d) => d.classList.contains('is-on')));
       dots[(cur + 1) % dots.length].click();
+      armed = true;
     };
     // the hold is caught with a timer while the finger is still down: phones often cancel a long touch (to start
     // text selection or a link menu) just before it ends, so timing it at release misses it
     const down = (x: number, y: number) => {
-      held = true; moved = false; sx = x; sy = y;
+      held = true; moved = false; swiped = false; sx = x; sy = y;
       clearTimeout(holdT);
-      holdT = window.setTimeout(() => { if (held && !moved) pausedUntil = Infinity; }, HOLD_MS);
+      holdT = window.setTimeout(() => { if (held && !moved && armed) pausedUntil = Infinity; }, HOLD_MS);
     };
     const move = (x: number, y: number) => {
-      if (held && !moved && Math.hypot(x - sx, y - sy) > MOVE_PX) { moved = true; clearTimeout(holdT); }
+      if (!held || moved || Math.hypot(x - sx, y - sy) <= MOVE_PX) return;
+      moved = true; clearTimeout(holdT);
+      swiped = Math.abs(x - sx) > Math.abs(y - sy); // sideways = swiping the row; up/down = scrolling the page
     };
     const up = () => {
       if (!held) return;
       held = false; clearTimeout(holdT);
-      if (pausedUntil === Infinity || moved) pausedUntil = Date.now() + idleMs; // a press and hold, or a swipe
+      if (!armed) return;
+      if (pausedUntil === Infinity || swiped) pausedUntil = Date.now() + idleMs; // a press and hold, or a swipe
     };
     // touch events (not pointer events): they keep coming while the browser scrolls the row under the finger
     row.addEventListener('touchstart', (e) => down(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
@@ -668,11 +676,11 @@ function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], { autoplay
     row.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') down(e.clientX, e.clientY); });
     window.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') move(e.clientX, e.clientY); });
     window.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') up(); });
-    // start when the row comes into view (first move after one interval plus FIRST_WAIT_MS); stop when it leaves
+    // start when half the row is in view (first move FIRST_MOVE_MS later, then every interval); stop when it leaves
     new IntersectionObserver(([en]) => {
       clearInterval(timer); clearTimeout(startT);
-      if (en.isIntersecting) startT = window.setTimeout(() => { next(); timer = window.setInterval(next, autoplayMs); }, autoplayMs + FIRST_WAIT_MS);
-    }, { threshold: 0.3 }).observe(row);
+      if (en.isIntersecting) startT = window.setTimeout(() => { next(); timer = window.setInterval(next, autoplayMs); }, FIRST_MOVE_MS);
+    }, { threshold: 0.5 }).observe(row);
   }
 }
 // Phones: Skills, Projects and Education move on by themselves every 1.5s; a press and hold or a swipe stops it for 15s

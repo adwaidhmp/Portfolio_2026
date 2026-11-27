@@ -10,7 +10,10 @@ import Skills from '../components/Skills.astro';
 import Experience from '../components/Experience.astro';
 import Projects from '../components/Projects.astro';
 import Education from '../components/Education.astro';
+import Services from '../components/Services.astro';
+import Faq from '../components/Faq.astro';
 import Contact from '../components/Contact.astro';
+import QuickContact from '../components/QuickContact.astro';
 import Footer from '../components/Footer.astro';
 import AgentChat from '../components/AgentChat.astro';
 import { marquee, availabilityBanner, profile } from '../data/portfolio';
@@ -32,6 +35,9 @@ import { marquee, availabilityBanner, profile } from '../data/portfolio';
     <Education />
     <Marquee items={marquee} variant="gold" speed={60} reverse />
     <Contact />
+    <Services />
+    <Faq />
+    <QuickContact />
   </main>
   <Footer />
   <AgentChat />

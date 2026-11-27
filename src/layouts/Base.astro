@@ -6,7 +6,7 @@ import '@fontsource/instrument-serif/400-italic.css';
 import '../styles/global.css';
 import unboundedLatin from '@fontsource-variable/unbounded/files/unbounded-latin-wght-normal.woff2?url';
 import groteskLatin from '@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url';
-import { profile, seo, contact, skills, experience, education, openRoles } from '../data/portfolio';
+import { profile, seo, contact, skills, experience, education, openRoles, services, faq } from '../data/portfolio';
 
 interface Props {
   title?: string;
@@ -21,6 +21,8 @@ const ogImage = new URL(seo.ogImage, site).href;
 const current = experience.find((r) => r.current);
 
 const knowsAbout = Array.from(new Set(skills.flatMap((c) => c.skills)));
+// One entry per keyword, ignoring case ("AI Engineer" and "AI engineer" are the same search).
+const keywords = [...new Map([...seo.keywords, ...profile.keywords, ...openRoles].map((k) => [k.toLowerCase(), k])).values()].join(', ');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -40,8 +42,8 @@ const jsonLd = {
       name: profile.name,
       givenName: profile.firstName,
       familyName: profile.lastName,
-      jobTitle: ['AI Engineer', 'Software Engineer', 'Python Developer'],
-      description: seo.description,
+      jobTitle: ['Full Stack Developer', 'Software Engineer', 'AI Engineer', 'Python Developer', 'Agentic AI Developer', 'Web Developer'],
+      description: seo.summary,
       url: site.href,
       image: ogImage,
       email: `mailto:${contact.email}`,
@@ -54,6 +56,18 @@ const jsonLd = {
       },
       sameAs: [contact.github, contact.linkedin],
       knowsAbout,
+      knowsLanguage: profile.languages,
+      makesOffer: services.map((s) => ({
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Service',
+          name: s.title,
+          serviceType: s.title,
+          description: s.text,
+          provider: { '@id': `${site.href}#person` },
+          areaServed: ['Kerala', 'India', 'GCC', 'Worldwide (remote)'],
+        },
+      })),
       worksFor: current
         ? { '@type': 'Organization', name: current.company, ...(current.companyNote ? { brand: current.companyNote } : {}) }
         : undefined,
@@ -63,8 +77,18 @@ const jsonLd = {
         .map((e) => ({ '@type': 'EducationalOccupationalCredential', name: e.title, recognizedBy: { '@type': 'Organization', name: e.org } })),
       seeks: {
         '@type': 'Demand',
-        description: 'AI / LLM engineering roles, agentic AI and Python freelance projects. Open to relocation, including the GCC.',
+        description: 'Freelance and full-time work: full stack web development, AI agents and chatbots, websites, UI design and 3D websites. Open to remote work and relocation, including the GCC.',
       },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${site.href}#faq`,
+      url: `${site.href}#faq`,
+      mainEntity: faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
     },
     {
       '@type': 'WebSite',
@@ -84,7 +108,7 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="keywords" content={Array.from(new Set([...seo.keywords, ...profile.keywords, ...openRoles])).join(', ')} />
+    <meta name="keywords" content={keywords} />
     <meta name="author" content={profile.name} />
     <link rel="canonical" href={canonical} />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
