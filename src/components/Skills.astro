@@ -8,11 +8,12 @@ const total = skills.reduce((n, c) => n + c.skills.length, 0);
 const tone = (id: string) => (id === 'ai' ? 'tone-accent' : id === 'backend' ? 'tone-ink' : 'tone-glass');
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// Phones: the tiles are grouped into swipeable pages, one wide tile over two small ones ('ask' is the
-// "Want specifics?" tile). The small tiles are paired by height so neither has a big empty bottom.
+// Phones: the tiles are grouped into swipeable pages ('ask' is the "Want specifics?" tile). The row keeps one
+// height (the tallest page), so the pages are filled to about the same height: wide tiles (ai, backend,
+// frontend, devops) span the page, small tiles sit two side by side, paired by height.
 // On bigger screens the groups don't exist for layout (display: contents) and each tile's --o (order)
 // puts the bento back in data order. Any group missing here gets a page of its own.
-const layout = [['ai', 'lang', 'realtime'], ['backend', 'async', 'tools'], ['frontend', 'design', 'ask'], ['devops']];
+const layout = [['ai', 'lang', 'realtime'], ['backend', 'design', 'ask'], ['frontend', 'async', 'tools', 'devops']];
 const placed = new Set(layout.flat());
 const extra = skills.filter((c) => !placed.has(c.id)).map((c) => c.id);
 const pages = extra.length ? [...layout, extra] : layout;
@@ -26,6 +27,8 @@ const byId = new Map(skills.map((c, i) => [c.id, { c, i }]));
       title="Tech stack"
       script="what I ship with"
       id="skills-title"
+      compact
+      small
       sub={`${total} skills across ${skills.length} groups. Agentic AI leads; a solid Python backend carries it.`}
     />
 

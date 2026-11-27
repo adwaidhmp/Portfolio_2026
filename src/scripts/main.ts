@@ -238,15 +238,15 @@ if (xpProg) {
   if (reduced) xpProg.style.setProperty('--p', '1');
 }
 $$('[data-role-toggle]').forEach((btn) => {
-  // On phones every role starts collapsed (lead line + agent flow) so the section fits the screen
+  // On phones every role is always open, full details showing (the toggle button is hidden in CSS)
   if (matchMedia('(max-width: 600px)').matches) {
     const role = btn.closest<HTMLElement>('[data-role]')!;
-    // Collapse instantly (no .8s height animation) so the page's scroll positions are measured on
-    // the final layout — otherwise reveals further down (e.g. the contact form) fire ~700px late.
+    // Open instantly (no .8s height animation) so the page's scroll positions are measured on
+    // the final layout; otherwise reveals further down (e.g. the contact form) fire late.
     const body = $<HTMLElement>('.role__body', role);
     if (body) body.style.transition = 'none';
-    role.dataset.open = 'false';
-    btn.setAttribute('aria-expanded', 'false');
+    role.dataset.open = 'true';
+    btn.setAttribute('aria-expanded', 'true');
     if (body) { void body.offsetHeight; requestAnimationFrame(() => { body.style.transition = ''; }); }
   }
   btn.addEventListener('click', () => {
@@ -588,27 +588,12 @@ function packetStorm() {
 }
 
 /* ---------- Sideways rows on phones (Skills, Education, Projects): drag with a mouse, dots show/move the position ---------- */
-// One dot per child of the row. `fitHeight`: the children have different heights, so the row's height
-// follows the one in view (blending between two while swiping) instead of staying as tall as the tallest.
-function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], fitHeight = false) {
+// One dot per child of the row. `autoplayMs` / `idleMs`: move to the next page by itself, and how long a press
+// and hold keeps it still (autoplay block below).
+type SwipeOpts = { autoplayMs?: number; idleMs?: number; pauseWhen?: () => boolean };
+function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], { autoplayMs = 0, idleMs = 15000, pauseWhen = () => false }: SwipeOpts = {}) {
   if (!row || !dots.length) return;
   const items = [...row.children] as HTMLElement[];
-  const fit = () => {
-    const cs = getComputedStyle(row);
-    if (cs.overflowX === 'visible') { row.style.height = ''; return; } // not a sideways row at this size
-    const step = items.length > 1 ? items[1].offsetLeft - items[0].offsetLeft : row.clientWidth;
-    const p = Math.max(0, Math.min(items.length - 1, row.scrollLeft / (step || 1)));
-    const i = Math.floor(p), f = p - i;
-    const a = items[i].offsetHeight, b = items[Math.min(i + 1, items.length - 1)].offsetHeight;
-    row.style.height = `${a + (b - a) * f + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)}px`;
-  };
-  if (fitHeight) {
-    row.addEventListener('scroll', fit, { passive: true });
-    window.addEventListener('resize', fit);
-    const ro = new ResizeObserver(fit);
-    items.forEach((it) => ro.observe(it));
-    fit();
-  }
   const syncDots = () => {
     const mid = row.scrollLeft + row.clientWidth / 2;
     let best = 0;
@@ -645,10 +630,59 @@ function swipeRow(row: HTMLElement | null, dots: HTMLButtonElement[], fitHeight 
     syncDots();
     dots.find((d) => d.classList.contains('is-on'))?.click();
   });
+  // Autoplay: next page every `autoplayMs`, looping back to the first. It starts when the row scrolls into view
+  // (the first page stays an extra FIRST_WAIT_MS) and stops when it leaves. It never moves while a finger (or mouse
+  // button) is down on the row; a press and hold (a finger kept still for HOLD_MS) or a swipe stops it for `idleMs`
+  // after letting go. A quick tap doesn't stop it. Only on phones (the row scrolls sideways) with the tab open;
+  // off for visitors who prefer reduced motion.
+  if (autoplayMs && !reduced) {
+    const HOLD_MS = 350, MOVE_PX = 12, FIRST_WAIT_MS = 1000;
+    let held = false, moved = false, pausedUntil = 0, sx = 0, sy = 0, holdT = 0, timer = 0, startT = 0;
+    const scrollable = () => getComputedStyle(row).overflowX !== 'visible' && row.scrollWidth > row.clientWidth + 1;
+    const next = () => {
+      if (held || Date.now() < pausedUntil || document.hidden || !scrollable() || pauseWhen()) return;
+      const cur = Math.max(0, dots.findIndex((d) => d.classList.contains('is-on')));
+      dots[(cur + 1) % dots.length].click();
+    };
+    // the hold is caught with a timer while the finger is still down: phones often cancel a long touch (to start
+    // text selection or a link menu) just before it ends, so timing it at release misses it
+    const down = (x: number, y: number) => {
+      held = true; moved = false; sx = x; sy = y;
+      clearTimeout(holdT);
+      holdT = window.setTimeout(() => { if (held && !moved) pausedUntil = Infinity; }, HOLD_MS);
+    };
+    const move = (x: number, y: number) => {
+      if (held && !moved && Math.hypot(x - sx, y - sy) > MOVE_PX) { moved = true; clearTimeout(holdT); }
+    };
+    const up = () => {
+      if (!held) return;
+      held = false; clearTimeout(holdT);
+      if (pausedUntil === Infinity || moved) pausedUntil = Date.now() + idleMs; // a press and hold, or a swipe
+    };
+    // touch events (not pointer events): they keep coming while the browser scrolls the row under the finger
+    row.addEventListener('touchstart', (e) => down(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    row.addEventListener('touchmove', (e) => move(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    row.addEventListener('touchend', up);
+    row.addEventListener('touchcancel', up);
+    row.addEventListener('contextmenu', (e) => { if (held && scrollable()) e.preventDefault(); }); // no long-press menu
+    row.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') down(e.clientX, e.clientY); });
+    window.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') move(e.clientX, e.clientY); });
+    window.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') up(); });
+    // start when the row comes into view (first move after one interval plus FIRST_WAIT_MS); stop when it leaves
+    new IntersectionObserver(([en]) => {
+      clearInterval(timer); clearTimeout(startT);
+      if (en.isIntersecting) startT = window.setTimeout(() => { next(); timer = window.setInterval(next, autoplayMs); }, autoplayMs + FIRST_WAIT_MS);
+    }, { threshold: 0.3 }).observe(row);
+  }
 }
-swipeRow($<HTMLElement>('[data-stack]'), $$<HTMLButtonElement>('[data-stack-dots] button'), true);
-swipeRow($<HTMLElement>('[data-edu]'), $$<HTMLButtonElement>('[data-edu-dots] button'));
-swipeRow($<HTMLElement>('[data-projects]'), $$<HTMLButtonElement>('[data-projects-dots] button'));
+// Phones: Skills, Projects and Education move on by themselves every 1.5s; a press and hold or a swipe stops it for 15s
+const AUTOPLAY = { autoplayMs: 1500, idleMs: 15000 };
+swipeRow($<HTMLElement>('[data-stack]'), $$<HTMLButtonElement>('[data-stack-dots] button'), AUTOPLAY);
+swipeRow($<HTMLElement>('[data-edu]'), $$<HTMLButtonElement>('[data-edu-dots] button'), AUTOPLAY);
+// (a project card turned to its Details side also stays put until it's turned back)
+swipeRow($<HTMLElement>('[data-projects]'), $$<HTMLButtonElement>('[data-projects-dots] button'), {
+  ...AUTOPLAY, pauseWhen: () => !!document.querySelector('[data-projects] [data-flipped="true"]'),
+});
 
 /* ---------- Skills: bento tiles ---------- */
 // a soft spotlight follows the pointer inside each tile

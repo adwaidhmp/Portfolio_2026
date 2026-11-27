@@ -7,11 +7,17 @@ interface Props {
   sub?: string;
   id: string;
   total?: string;
+  /** Less room below and a title that shrinks a little on short screens (helps the section fit one screen). */
+  compact?: boolean;
+  /** Each title word on its own line, so the script sits beside the last one instead of on a row of its own. */
+  stack?: boolean;
+  /** A smaller title, so a one-line title leaves room for the script beside it. */
+  small?: boolean;
 }
-const { index, label, title, script, sub, id, total = '06' } = Astro.props;
+const { index, label, title, script, sub, id, total = '06', compact = false, stack = false, small = false } = Astro.props;
 const words = title.split(' ');
 ---
-<header class="shead">
+<header class:list={['shead', compact && 'shead--compact', stack && 'shead--stack', small && 'shead--small']}>
   <div class="shead__meta t-micro" data-reveal>
     <span class="idx"><b>({index})</b> {label}</span>
     <span aria-hidden="true">{index} / {total}</span>
