@@ -11,6 +11,7 @@ export const openRoles = [
   'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI Engineer', 'Applied AI Engineer',
   'AI Agent Developer', 'AI/ML Engineer', 'Python AI Developer', 'RAG Engineer', 'Conversational AI Developer',
   'AI Automation Engineer', 'AI Integration Engineer', 'AI Solutions Engineer', 'Prompt Engineer',
+  'Python Full-Stack Developer',
 ];
 
 /** Job preferences the AI agent shares when a visitor asks (they aren't shown on the page). */
@@ -26,7 +27,7 @@ export const profile = {
   name: 'Adwaidh MP',
   firstName: 'Adwaidh',
   lastName: 'MP',
-  title: 'Software Engineer | AI & Agentic Systems | Python',
+  title: 'Software Engineer | AI & Agentic Systems | Python Full-Stack',
   shortTitle: 'AI Engineer',
   /** Short "about me" on the back of the photo card and under the About portrait. */
   headline: 'AI Software Developer',
@@ -39,7 +40,12 @@ export const profile = {
   region: 'Kerala',
   country: 'IN',
   relocation: 'Open to relocation (including the GCC)',
-  availability: 'Open to all AI roles: AI Engineer, Agentic AI, LLM, Generative AI and more · Full-time, remote or freelance · Open to relocation, including the GCC',
+  /** From the GCC resume; the agent shares these when asked (not shown on the page). */
+  nationality: 'Indian',
+  visa: 'needs an employment visa for roles abroad',
+  notice: 'immediate',
+  languages: ['English', 'Malayalam', 'Hindi'],
+  availability: 'Open to AI and full-stack roles: AI Engineer, Agentic AI, LLM, Generative AI, Python Full-Stack and more · Full-time, remote or freelance · Open to relocation, including the GCC',
   /** Words cycled by the typing animation in the hero. */
   typing: ['AI Agents', 'MCP Servers', 'Agentic Chat', 'Python Backends', 'LLM-Powered Products'],
   /** Drop your resume at public/resume/Adwaidh-MP-Resume.pdf */
@@ -57,34 +63,34 @@ export const seo = {
     'AI Engineer', 'LLM Engineer', 'Agentic AI developer', 'AI agent developer', 'MCP server developer',
     'Python developer', 'Django developer', 'FastAPI developer', 'software developer for hire',
     'freelance AI developer', 'freelance Python developer', 'software engineer Kerala', 'AI engineer Kannur',
-    'Claude API developer', 'RAG developer', 'LangGraph',
+    'Claude API developer', 'RAG developer', 'LangGraph', 'full-stack Python developer',
   ],
   ogImage: '/og.png',
 };
 
 export const about = {
   summary:
-    'AI-focused Python developer with 1.5+ years of experience building LLM-powered products. At Desklog (SaaS), I build agentic AI systems in production: an autonomous coding agent on the Claude API, MCP servers that connect the product to Claude and ChatGPT, and an in-app AI agent that answers data questions and takes actions from chat. Strong Python backend skills (Django, DRF, FastAPI, Celery, Redis), DevOps and cloud deployment experience (Docker, AWS EC2/RDS/S3, Cloudflare, Contabo, Nginx reverse proxy, PM2), and hands-on RAG and LangGraph work. Open to AI Engineer, Agentic AI Developer, LLM Engineer, Generative AI and other AI roles.',
+    'AI-focused Python developer with 1.5+ years of experience building LLM-powered products. At Desklog (SaaS), I built agentic AI systems in production: an autonomous FastAPI coding agent on the Claude API, MCP servers that connect the product to Claude and ChatGPT, and an in-app AI agent that answers data questions and takes actions from chat. Strong Python backend skills (Django, DRF, FastAPI, Celery, Redis), React frontend, and hands-on RAG and LangGraph work. Seeking AI/LLM engineering and full-stack roles.',
   highlights: [
     { value: 1.5, decimals: 1, suffix: '+', label: 'Years hands-on experience' },
     { value: 4, decimals: 0, suffix: '', label: 'Production AI systems built at Desklog' },
     { value: 2, decimals: 0, suffix: '', label: 'MCP servers built' },
-    { value: 1, decimals: 0, suffix: '', label: 'Claude Code & Codex plugin built' },
+    { value: 2, decimals: 0, suffix: '', label: 'Claude Code & Codex plugins built' },
   ],
 };
 
 export type SkillCategory = { id: string; name: string; skills: string[]; featured?: boolean };
 
 export const skills: SkillCategory[] = [
-  { id: 'ai', name: 'AI & Agentic AI', featured: true, skills: ['Claude API', 'MCP Servers', 'AI Agents', 'Claude Code & Codex Plugins', 'LangChain', 'LangGraph', 'RAG', 'ChromaDB', 'OpenAI API'] },
-  { id: 'lang', name: 'Languages', skills: ['Python', 'JavaScript', 'SQL'] },
-  { id: 'backend', name: 'Backend', skills: ['Django', 'DRF', 'FastAPI', 'REST APIs', 'JWT', 'OAuth', 'Role-Based Access', 'Microservices'] },
-  { id: 'async', name: 'Async & Caching', skills: ['Celery', 'Celery Beat', 'RabbitMQ', 'Redis'] },
-  { id: 'realtime', name: 'Realtime', skills: ['Django Channels', 'WebSockets', 'WebRTC'] },
-  { id: 'frontend', name: 'Frontend & Databases', skills: ['React.js', 'Redux Toolkit', 'Tailwind', 'PostgreSQL', 'MySQL', 'SQLite'] },
-  { id: 'devops', name: 'DevOps & Cloud', skills: ['Docker', 'AWS (EC2, S3, RDS)', 'Cloudflare', 'Contabo', 'Linux', 'Nginx (Reverse Proxy)', 'Gunicorn', 'PM2', 'Cron Jobs', 'CI/CD'] },
-  { id: 'tools', name: 'Tools', skills: ['Git', 'GitHub', 'Postman', 'Razorpay'] },
-  { id: 'also', name: 'Also', skills: ['PHP (Laravel, Blade)', 'Node.js'] },
+  { id: 'ai', name: 'AI & Agentic AI', featured: true, skills: ['AI Agents', 'MCP Servers', 'Claude API', 'OpenAI API', 'LangChain', 'LangGraph', 'RAG', 'ChromaDB', 'Claude Code', 'Codex'] },
+  { id: 'lang', name: 'Languages', skills: ['Python', 'JavaScript', 'SQL', 'PHP'] },
+  { id: 'backend', name: 'Backend', skills: ['Django', 'DRF', 'FastAPI', 'Laravel', 'Node.js', 'REST APIs', 'Microservices', 'JWT', 'OAuth 2.0', 'RBAC'] },
+  { id: 'async', name: 'Async Processing', skills: ['Celery', 'Celery Beat', 'RabbitMQ', 'Redis'] },
+  { id: 'realtime', name: 'Real-Time Systems', skills: ['Django Channels', 'WebSockets', 'WebRTC'] },
+  { id: 'frontend', name: 'Frontend & Databases', skills: ['React.js', 'Redux Toolkit', 'Tailwind CSS', 'Blade', 'PostgreSQL', 'MySQL', 'SQLite'] },
+  { id: 'devops', name: 'DevOps & Cloud', skills: ['Docker', 'AWS (EC2, S3, RDS)', 'Cloudflare', 'Linux', 'Nginx', 'Gunicorn', 'PM2', 'CI/CD'] },
+  { id: 'tools', name: 'Tools', skills: ['Git', 'GitHub', 'GitLab', 'Postman', 'Razorpay'] },
+  { id: 'design', name: 'System Design', skills: ['Scalability', 'Load Balancing', 'Caching', 'Rate Limiting', 'CDN', 'Message Queues'] },
 ];
 
 export type Role = {
@@ -108,34 +114,33 @@ export const experience: Role[] = [
     title: 'Software Engineer',
     company: 'Infinite Open Source Solutions',
     companyNote: 'Desklog',
-    start: 'Feb 2026',
+    start: 'Jan 2026',
     end: 'Present',
     current: true,
     agentFlow: true,
     points: [
-      'Built an autonomous AI coding agent on the Claude API that picks up assigned Desklog tasks, writes the code, and completes them end to end.',
-      'Built MCP servers for Desklog and Desklog CRM, exposing tools so Claude and ChatGPT (including their web apps) can read and act on product data.',
-      'Developed an in-app agentic AI chat with MCP tool calling that answers questions from live product data (e.g. who is absent today, who worked the most) and performs actions (e.g. enabling features, running tasks) from natural-language commands.',
-      "Built a plugin for Claude Code and OpenAI Codex that tracks developers' AI usage and reports it to Desklog.",
-      'Contribute to the backend of Desklog, a multi-tenant time-tracking SaaS platform used worldwide, working primarily with Laravel and PHP across its distributed, load-balanced architecture.',
-      'Develop and improve backend features and REST APIs, with a focus on database optimization, indexing, and caching to support concurrent tenant workloads.',
-      'Built external integrations with Slack, Google Calendar, and Google Chat.',
-      'Also delivered core product features with Blade frontend UI, internal tools (Desklog CRM, Super Admin panel), and deployments on AWS, Cloudflare, and Contabo (Linux, PM2, cron jobs).',
+      'Developed an autonomous AI coding agent using FastAPI and Claude API, integrated with Desklog for automated task execution and code generation.',
+      'Built MCP servers for Desklog and its CRM, enabling Claude and ChatGPT to interact with application data and perform actions.',
+      'Developed an in-app AI assistant with MCP tool calling to answer queries and execute actions using live product data.',
+      "Created Claude Code and OpenAI Codex plugins to track and report developers' AI usage.",
+      "Developed backend features, REST APIs, and optimized database queries for Desklog's multi-tenant SaaS platform.",
+      'Built application interfaces using Laravel Blade and integrated Slack, Google Chat, and Google Calendar.',
+      'Managed deployments and infrastructure across AWS, Cloudflare, and Linux servers.',
     ],
-    tech: ['Claude API', 'OpenAI API', 'MCP', 'PHP (Laravel, Blade)', 'Node.js', 'MySQL', 'AWS', 'Cloudflare', 'Linux'],
+    tech: ['Python', 'FastAPI', 'Claude API', 'OpenAI API', 'MCP', 'PHP', 'Laravel', 'Node.js', 'MySQL', 'Redis', 'AWS', 'Cloudflare', 'Docker'],
   },
   {
     id: 'bridgeon',
     title: 'Full-Stack Python Developer Intern',
     company: 'Bridgeon Solutions',
     location: 'Malappuram',
-    start: 'Jun 2025',
-    end: 'Feb 2026',
+    start: 'May 2025',
+    end: 'Dec 2025',
     points: [
       'Built REST APIs and backend services with Django, DRF, and FastAPI, including auth and role-based access.',
-      'Used Celery and RabbitMQ for emails, notifications, scheduled jobs, and AI tasks, and Redis caching to speed up APIs and reduce database load.',
+      'Used Celery and RabbitMQ for emails, notifications, scheduled jobs, and AI tasks, with Redis caching.',
       'Built responsive frontends with React.js, Redux Toolkit, and Tailwind CSS, connected to backend APIs.',
-      'Containerized services with Docker and deployed on AWS (EC2, RDS, S3) with Nginx, Gunicorn, and CI/CD, working in Agile sprints with code reviews.',
+      'Containerized services with Docker and deployed on AWS (EC2, RDS, S3) with Nginx, Gunicorn, and CI/CD.',
     ],
     tech: ['Django', 'DRF', 'FastAPI', 'Celery', 'RabbitMQ', 'Redis', 'React.js', 'Docker', 'AWS'],
   },
@@ -232,6 +237,6 @@ export const agentSuggestions = [
 
 /** Words that scroll in the red marquee strips. */
 /** The big banner between Skills and Experience. */
-export const availabilityBanner = ['Open to AI roles', 'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI Engineer', 'Applied AI Engineer', 'Full-time', 'Freelance', 'Remote', 'Open to GCC relocation'];
+export const availabilityBanner = ['Open to AI roles', 'AI Engineer', 'Agentic AI Developer', 'LLM Engineer', 'Generative AI Engineer', 'Applied AI Engineer', 'Python Full-Stack', 'Full-time', 'Freelance', 'Remote', 'Open to GCC relocation'];
 
 export const marquee = ['AI Agents', 'MCP Servers', 'Agentic Chat', 'Claude API', 'LangGraph', 'RAG', 'Python Backends', 'FastAPI', 'Django'];

@@ -825,7 +825,7 @@ html:not(.reduced) .about__photo-tag i { animation: lq-dot 1.8s ease-in-out infi
 }
 .tile--lang, .tile--async { grid-column: span 3; }
 .tile--backend { grid-column: span 6; }
-.tile--realtime, .tile--frontend, .tile--devops, .tile--tools, .tile--also, .tile--ask { grid-column: span 4; }
+.tile--realtime, .tile--frontend, .tile--devops, .tile--tools, .tile--design, .tile--ask { grid-column: span 4; }
 
 /* the "ask my agent" tile */
 .tile__live { display: inline-flex; align-items: center; gap: 8px; }
@@ -1148,44 +1148,49 @@ html:not(.reduced) .ag__node { animation: ag-call 2.4s ease-in-out infinite; }
   display: grid; place-items: center; flex: none; border-radius: 50%;
   background: var(--accent);
 }
-/* "Hi, I'm …'s AI agent / Ask me anything" speech bubble above the agent button
-   (agent.ts pops it up for 2s after load, then every 3 minutes) */
+/* "Ask me anything" popup above the agent button: a tiny dark terminal, same feel as the chat window
+   (agent.ts shows it for 3s after load, then every 2 minutes; the command types itself out each time) */
 .agent-hint {
-  position: fixed; right: clamp(14px, 2vw, 26px); bottom: calc(clamp(14px, 2vw, 26px) + 68px); z-index: 94;
-  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 28px); padding: 12px 20px 12px 12px;
-  border-radius: 22px 22px 6px 22px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--fg);
-  text-align: left; cursor: pointer; overflow: hidden; isolation: isolate;
-  box-shadow: 0 0 0 5px rgb(var(--accent-rgb) / .14), 0 22px 44px -16px rgb(0 0 0 / calc(.65 * var(--sh)));
-  transform-origin: bottom right; transform: translateY(12px) scale(.8); opacity: 0; visibility: hidden;
-  transition: transform .5s var(--ease-out-expo), opacity .25s, visibility 0s .5s;
+  position: fixed; right: clamp(14px, 2vw, 26px); bottom: calc(clamp(14px, 2vw, 26px) + 66px); z-index: 94;
+  display: grid; width: 268px; max-width: calc(100vw - 28px); padding: 0;
+  border-radius: 12px; border: 1px solid rgb(var(--accent-rgb) / .45); background: #0f0f10; color: #ececec;
+  font-family: var(--font-mono); text-align: left; cursor: pointer; overflow: hidden;
+  box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / .1), 0 24px 46px -20px rgb(0 0 0 / .6);
+  transform-origin: bottom right; transform: translateY(10px) scale(.94); opacity: 0; visibility: hidden;
+  transition: transform .5s var(--ease-out-expo), opacity .25s, visibility 0s .5s, border-color .3s;
 }
-.agent-hint[data-open="true"] { transform: none; opacity: 1; visibility: visible; transition: transform .5s var(--ease-out-expo), opacity .25s, visibility 0s; }
-/* the background network, same look as the scene: hairline links, small ink nodes, teal hubs (one pulsing) */
-.agent-hint__net { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
-.agent-hint__lines path { fill: none; stroke: rgb(var(--fg-rgb) / .16); stroke-width: 1; }
-.agent-hint__nodes circle { fill: rgb(var(--fg-rgb) / .5); }
-.agent-hint__teal { fill: var(--accent); }
-.agent-hint__pulse { fill: none; stroke: var(--accent); stroke-width: 1.2; transform-box: fill-box; transform-origin: center; opacity: 0; }
-html:not(.reduced) .agent-hint[data-open="true"] .agent-hint__pulse { animation: hint-pulse 1.4s var(--ease-out-expo) infinite; }
-@keyframes hint-pulse { 0% { opacity: .8; transform: scale(1); } 100% { opacity: 0; transform: scale(3.2); } }
-.agent-hint__avatar { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / .18); }
-.agent-hint__avatar .ag { width: 28px; height: 28px; }
-.agent-hint__body { display: grid; gap: 5px; }
-.agent-hint__hi { font-family: var(--font-display); font-weight: 700; font-size: .95rem; line-height: 1.25; letter-spacing: -.01em; }
-.agent-hint__ask { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: .84rem; font-weight: 600; color: var(--accent-ink); }
-.agent-hint__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-.agent-hint__nb { white-space: nowrap; } /* a narrow screen breaks the line before "AI agent", not inside it */
-.agent-hint__wave { display: inline-block; transform-origin: 70% 70%; }
-html:not(.reduced) .agent-hint[data-open="true"] .agent-hint__wave { animation: hint-wave 1s ease-in-out 2; }
-@keyframes hint-wave { 20% { transform: rotate(16deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(14deg); } 80% { transform: rotate(-4deg); } }
+.agent-hint[data-open="true"] { transform: none; opacity: 1; visibility: visible; transition: transform .5s var(--ease-out-expo), opacity .25s, visibility 0s, border-color .3s; }
+.agent-hint:hover { border-color: #4fd1bb; }
+.agent-hint__bar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: #1a1a1c; border-bottom: 1px solid rgb(255 255 255 / .07); font-size: .68rem; letter-spacing: .02em; color: #a3a3a3;
+}
+.agent-hint__dots { display: inline-flex; gap: 5px; }
+.agent-hint__dots i { width: 7px; height: 7px; border-radius: 50%; background: rgb(255 255 255 / .16); }
+.agent-hint__label { flex: 1; display: inline-flex; align-items: center; gap: 6px; }
+.agent-hint__dot { width: 6px; height: 6px; border-radius: 50%; background: #8fd18f; box-shadow: 0 0 8px #8fd18f; }
+.agent-hint__arrow { font-size: .85rem; line-height: 1; color: #ececec; transition: transform .3s var(--ease-out-expo); }
+.agent-hint:hover .agent-hint__arrow { transform: translate(2px, -2px); }
+.agent-hint__body { display: grid; gap: 7px; padding: 12px 14px 14px; }
+.agent-hint__line { display: flex; align-items: center; gap: 9px; font-size: .96rem; font-weight: 600; color: #fff; }
+.agent-hint__prompt { color: #4fd1bb; }
+.agent-hint__type { display: inline-flex; align-items: center; gap: 2px; }
+.agent-hint__cmd { display: inline-block; overflow: hidden; white-space: nowrap; }
+.agent-hint__cursor { width: .55em; height: 1.15em; background: #4fd1bb; }
+html:not(.reduced) .agent-hint__cursor { animation: hint-blink 1s steps(1) infinite; }
+.agent-hint__out { font-size: .8rem; line-height: 1.4; color: #a3a3a3; }
+/* each time it opens: "Ask me anything" (15 characters) types out, then the reply line appears */
+html:not(.reduced) .agent-hint[data-open="true"] .agent-hint__cmd { animation: hint-type .5s steps(15, end) .15s both; }
+html:not(.reduced) .agent-hint[data-open="true"] .agent-hint__out { animation: hint-out .3s ease .7s both; }
+@keyframes hint-type { from { width: 0; } to { width: 15ch; } }
+@keyframes hint-out { from { opacity: 0; transform: translateY(3px); } }
+@keyframes hint-blink { 50% { opacity: 0; } }
 @media (max-width: 820px) {
   .agent-fab { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); right: 14px; }
-  /* phones: a little bigger type than on desktop, but a compact bubble (about 3/4 of the screen at most) */
-  .agent-hint { right: 14px; bottom: calc(84px + 66px + env(safe-area-inset-bottom, 0px)); max-width: min(290px, calc(100vw - 28px)); gap: 12px; padding: 13px 18px 13px 13px; }
-  .agent-hint__avatar { width: 46px; height: 46px; }
-  .agent-hint__avatar .ag { width: 31px; height: 31px; }
-  .agent-hint__hi { font-size: 1rem; }
-  .agent-hint__ask { font-size: .88rem; }
+  /* phones: a touch bigger than on desktop, still compact */
+  .agent-hint { right: 14px; bottom: calc(84px + 66px + env(safe-area-inset-bottom, 0px)); width: 284px; }
+  .agent-hint__line { font-size: 1.04rem; }
+  .agent-hint__out { font-size: .86rem; }
 }
 
 .agent {

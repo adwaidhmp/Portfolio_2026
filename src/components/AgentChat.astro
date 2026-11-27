@@ -2,27 +2,18 @@
 import { agentSuggestions, profile, contact } from '../data/portfolio';
 import AgentIcon from './AgentIcon.astro';
 ---
-<!-- Small teaser bubble above the agent button: pops up for 2s after load, then every 3 minutes (agent.ts).
+<!-- Small teaser bubble above the agent button: shows for 3s after load, then every 2 minutes (agent.ts).
      Hidden from screen readers and keyboard: the agent button below does the same job. -->
 <button class="agent-hint" type="button" data-agent-hint data-open="false" aria-hidden="true" tabindex="-1">
-  <!-- a little piece of the background network (lines, nodes, a pulsing teal hub) behind the text -->
-  <svg class="agent-hint__net" viewBox="0 0 320 110" preserveAspectRatio="xMaxYMid slice">
-    <g class="agent-hint__lines">
-      <path d="M150 104 L196 82 L236 50 L212 16 L182 4 M236 50 L276 66 L306 30 L256 8 L212 16 M276 66 L300 96 L248 100 L196 82 M256 8 L306 30 M248 100 L276 66" />
-    </g>
-    <g class="agent-hint__nodes">
-      <circle cx="182" cy="4" r="1.6" /><circle cx="212" cy="16" r="2.2" /><circle cx="256" cy="8" r="1.8" />
-      <circle cx="306" cy="30" r="2.4" /><circle cx="196" cy="82" r="1.8" /><circle cx="150" cy="104" r="1.4" />
-      <circle cx="300" cy="96" r="1.8" /><circle cx="248" cy="100" r="2" />
-    </g>
-    <circle class="agent-hint__teal" cx="236" cy="50" r="2.6" />
-    <circle class="agent-hint__pulse" cx="276" cy="66" r="4" />
-    <circle class="agent-hint__teal" cx="276" cy="66" r="3.4" />
-  </svg>
-  <span class="agent-hint__avatar"><AgentIcon /></span>
+  <!-- a tiny terminal, same feel as the chat window: title bar, then "❯ Ask me anything" types itself out -->
+  <span class="agent-hint__bar">
+    <span class="agent-hint__dots"><i></i><i></i><i></i></span>
+    <span class="agent-hint__label"><i class="agent-hint__dot"></i>AI agent · 24/7</span>
+    <span class="agent-hint__arrow">↗</span>
+  </span>
   <span class="agent-hint__body">
-    <span class="agent-hint__hi">Hi, I'm {profile.firstName}'s <span class="agent-hint__nb">AI agent <span class="agent-hint__wave">👋</span></span></span>
-    <span class="agent-hint__ask"><i class="agent-hint__dot"></i>Ask me anything →</span>
+    <span class="agent-hint__line"><span class="agent-hint__prompt">❯</span><span class="agent-hint__type"><span class="agent-hint__cmd">Ask me anything</span><i class="agent-hint__cursor"></i></span></span>
+    <span class="agent-hint__out">Hi, I'm {profile.firstName}'s AI agent.</span>
   </span>
 </button>
 

@@ -12,7 +12,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 // "Want specifics?" tile). The small tiles are paired by height so neither has a big empty bottom.
 // On bigger screens the groups don't exist for layout (display: contents) and each tile's --o (order)
 // puts the bento back in data order. Any group missing here gets a page of its own.
-const layout = [['ai', 'lang', 'also'], ['backend', 'realtime', 'tools'], ['frontend', 'async', 'ask'], ['devops']];
+const layout = [['ai', 'lang', 'realtime'], ['backend', 'async', 'tools'], ['frontend', 'design', 'ask'], ['devops']];
 const placed = new Set(layout.flat());
 const extra = skills.filter((c) => !placed.has(c.id)).map((c) => c.id);
 const pages = extra.length ? [...layout, extra] : layout;

@@ -47,10 +47,10 @@ const intents: Intent[] = [
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
         `At ${current.companyNote ?? current.company}, Adwaidh has shipped 4 production AI systems:\n` +
-        '① An autonomous coding agent on the Claude API that picks up assigned tasks, writes the code and completes them end to end.\n' +
+        '① An autonomous AI coding agent built with FastAPI and the Claude API, integrated with Desklog for automated task execution and code generation.\n' +
         '② MCP servers for Desklog and Desklog CRM, so Claude and ChatGPT can read and act on product data.\n' +
         '③ An in-app agentic chat with MCP tool calling. It answers live data questions ("who is absent today?") and runs actions from plain language.\n' +
-        "④ A Claude Code & OpenAI Codex plugin that tracks developers' AI usage.\n" +
+        "④ Claude Code and OpenAI Codex plugins that track and report developers' AI usage.\n" +
         'Outside work: a hybrid RAG + LangGraph knowledge assistant in his FitAI platform.',
       )],
     }),
@@ -76,22 +76,22 @@ const intents: Intent[] = [
       result: `${experience.length} roles`,
       section: 'experience', sectionLabel: 'Experience',
       segs: [T(
-        `At ${current.companyNote ?? current.company} he works on the backend of a multi-tenant time-tracking SaaS used worldwide, mainly Laravel and PHP on a distributed, load-balanced architecture. ` +
-        'He builds backend features and REST APIs, with a focus on database optimization, indexing and caching for concurrent tenant workloads.\n' +
+        `At ${current.companyNote ?? current.company} he develops backend features and REST APIs and optimizes database queries for its multi-tenant SaaS platform (PHP, Laravel, Node.js, MySQL, Redis). ` +
+        'He also builds Laravel Blade interfaces and integrations with Slack, Google Chat and Google Calendar.\n' +
         'Before that, at Bridgeon, he built REST APIs and services with Django, DRF and FastAPI (auth, role-based access), Celery + RabbitMQ background jobs and Redis caching.',
       )],
     }),
   },
   {
     id: 'devops',
-    keys: [['devops', 4], 'deploy', 'docker', 'aws', 'ec2', 'rds', 's3', 'cloudflare', 'contabo', 'pm2', 'nginx', 'reverse proxy', 'linux', 'server', 'hosting', 'cloud', 'ci cd', 'cron'],
+    keys: [['devops', 4], 'deploy', 'docker', 'aws', 'ec2', 'rds', 's3', 'cloudflare', 'pm2', 'nginx', 'gunicorn', 'linux', 'server', 'hosting', 'cloud', 'ci cd', 'infrastructure'],
     answer: () => ({
       tool: 'list_skills(group="devops")',
       result: `${cat('devops')?.skills.length ?? 0} skills`,
       section: 'skills', sectionLabel: 'Skills',
       segs: [T(
-        'He ships and runs his own services: Docker containers deployed on AWS (EC2, RDS, S3), Cloudflare and Contabo: Linux servers with Nginx as a reverse proxy, Gunicorn and PM2 for the app processes, cron jobs for scheduled work, and CI/CD pipelines.\n' +
-        `At ${current.companyNote ?? current.company} he handles deployments on AWS, Cloudflare and Contabo; at Bridgeon he containerized services with Docker and deployed them on AWS with Nginx, Gunicorn and CI/CD.`,
+        'He ships and runs his own services: Docker containers on AWS (EC2, RDS, S3) and Cloudflare, Linux servers with Nginx, Gunicorn and PM2, and CI/CD pipelines.\n' +
+        `At ${current.companyNote ?? current.company} he manages deployments and infrastructure across AWS, Cloudflare and Linux servers; at Bridgeon he containerized services with Docker and deployed them on AWS with Nginx, Gunicorn and CI/CD.`,
       )],
     }),
   },
@@ -120,7 +120,8 @@ const intents: Intent[] = [
         `Backend: ${cat('lang')?.skills.join(', ')} · ${cat('backend')?.skills.join(', ')}.\n` +
         `Async & realtime: ${[...(cat('async')?.skills ?? []), ...(cat('realtime')?.skills ?? [])].join(', ')}.\n` +
         `Frontend & data: ${cat('frontend')?.skills.join(', ')}.\n` +
-        `DevOps: ${cat('devops')?.skills.join(', ')}.`,
+        `DevOps: ${cat('devops')?.skills.join(', ')}.\n` +
+        `System design: ${cat('design')?.skills.join(', ')}.`,
       )],
     }),
   },
@@ -131,7 +132,17 @@ const intents: Intent[] = [
       tool: 'get_profile(fields=["location","relocation"])',
       result: 'ok',
       section: 'contact', sectionLabel: 'Contact',
-      segs: [T(`Yes. Adwaidh is based in ${profile.location} and is open to relocation, including the GCC. He's also open to remote roles and freelance projects.`)],
+      segs: [T(`Yes. Adwaidh is based in ${profile.location} and is open to relocation, including the GCC. He's ${profile.nationality === 'Indian' ? 'an Indian national' : profile.nationality}, ${profile.visa}, and his notice period is ${profile.notice}. He's also open to remote roles and freelance projects.`)],
+    }),
+  },
+  {
+    id: 'spoken',
+    keys: [['speak', 4], 'spoken', 'english', 'malayalam', 'hindi', 'mother tongue', 'communicat'],
+    answer: () => ({
+      tool: 'get_profile(fields=["languages"])',
+      result: `${profile.languages.length} languages`,
+      section: 'about', sectionLabel: 'About',
+      segs: [T(`He speaks ${profile.languages.slice(0, -1).join(', ')} and ${profile.languages[profile.languages.length - 1]}.`)],
     }),
   },
   {
@@ -158,7 +169,7 @@ const intents: Intent[] = [
       result: 'available',
       section: 'contact', sectionLabel: 'Contact',
       segs: [
-        T(`He's open to all AI roles: ${openRoles.join(', ')}.\nFull-time, remote or freelance, and open to relocation, including the GCC.\nBest way to start: `),
+        T(`He's open to AI and full-stack roles: ${openRoles.join(', ')}.\nFull-time, remote or freelance, and open to relocation, including the GCC. Notice period: ${profile.notice}.\nBest way to start: `),
         T(contact.email, `mailto:${contact.email}`),
       ],
     }),
@@ -566,9 +577,9 @@ export function initAgentChat(deps: {
 
   /* ---------- Teaser popup: invites visitors to try the agent ---------- */
   const hint = document.querySelector<HTMLElement>('[data-agent-hint]');
-  // The small "Ask me anything" bubble: pops up for 2s a little after load, then again every 3 minutes
+  // The small "Ask me anything" popup: shows for 3s a little after load, then again every 2 minutes
   // (skipped while the chat is open or the tab is in the background). Tapping it opens the chat.
-  const HINT_FIRST_MS = 5200, HINT_SHOW_MS = 2000, HINT_EVERY_MS = 3 * 60 * 1000;
+  const HINT_FIRST_MS = 5200, HINT_SHOW_MS = 3000, HINT_EVERY_MS = 2 * 60 * 1000;
   const SEEN_KEY = 'agentHintDismissed'; // the "1" badge on the button goes once the chat has been opened
   let hintT = 0;
   function flashHint() {

@@ -51,7 +51,7 @@ export const wheelCards: CardSpec[] = [
   ] },
   { id: 'docker', bg: 'black', motif: 'cloud', big: 'DOCKER', label: 'AWS · Nginx · Linux', sub: 'EC2 · S3 · RDS · CI/CD', back: [
     { where: 'Bridgeon', what: 'Docker on AWS EC2, RDS & S3 with Nginx, Gunicorn and CI/CD' },
-    { where: 'Desklog', what: 'Deploys on AWS, Cloudflare & Contabo (Linux, PM2, cron)' },
+    { where: 'Desklog', what: 'Deployments on AWS, Cloudflare & Linux servers' },
   ] },
   { id: 'sql', bg: 'white', motif: 'db', big: 'SQL', label: 'PostgreSQL · MySQL', sub: 'SQLite', back: [
     { where: 'Desklog', what: 'MySQL for a multi-tenant SaaS: optimization, indexing & caching' },
