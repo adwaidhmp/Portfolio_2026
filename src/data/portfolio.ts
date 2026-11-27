@@ -103,6 +103,12 @@ export const seo = {
     'full stack developer Kerala', 'web developer Kannur', 'freelance developer India',
   ],
   ogImage: '/og.png',
+  /** Google Search Console: Add property > URL prefix > "HTML tag" gives
+   *  <meta name="google-site-verification" content="XXXX" />. Paste only the XXXX part here. */
+  googleVerification: '' as string,
+  /** Bing Webmaster Tools (also feeds Yahoo, DuckDuckGo and ChatGPT search): the content of its
+   *  <meta name="msvalidate.01" content="XXXX" /> tag. Optional: Bing can import the site from Search Console instead. */
+  bingVerification: '' as string,
 };
 
 /** "What I can build for you" — the Services section, and the services listed for search engines. */

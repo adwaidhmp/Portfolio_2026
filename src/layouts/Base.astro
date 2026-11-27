@@ -112,6 +112,8 @@ const jsonLd = {
     <meta name="author" content={profile.name} />
     <link rel="canonical" href={canonical} />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+    {seo.googleVerification && <meta name="google-site-verification" content={seo.googleVerification} />}
+    {seo.bingVerification && <meta name="msvalidate.01" content={seo.bingVerification} />}
     <meta name="theme-color" content="#ffffff" />
     <meta name="color-scheme" content="light dark" />
     <meta name="format-detection" content="telephone=no" />
